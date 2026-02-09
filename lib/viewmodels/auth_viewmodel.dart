@@ -1,5 +1,8 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../models/user_model.dart';
@@ -101,6 +104,7 @@ class AuthViewModel extends StateNotifier<AsyncValue<void>> {
     String? name,
     String? phone,
     String? pixKey,
+    String? photoUrl,
   }) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
@@ -111,11 +115,40 @@ class AuthViewModel extends StateNotifier<AsyncValue<void>> {
       if (name != null) updates['name'] = name;
       if (phone != null) updates['phone'] = phone;
       if (pixKey != null) updates['pixKey'] = pixKey;
+      if (photoUrl != null) updates['photoUrl'] = photoUrl;
 
       if (updates.isNotEmpty) {
         await _firestoreService.updateUser(user.uid, updates);
+
+        // Also update Firebase Auth profile if name or photo changed
+        if (name != null || photoUrl != null) {
+          await user.updateProfile(displayName: name, photoURL: photoUrl);
+        }
       }
     });
+  }
+
+  // Upload profile image
+  Future<String> uploadProfileImage(dynamic imageFile) async {
+    final user = _authService.currentUser;
+    if (user == null) throw Exception('Usuário não autenticado');
+
+    final storageRef = FirebaseStorage.instance
+        .ref()
+        .child('profile_images')
+        .child('${user.uid}.jpg');
+
+    if (imageFile is File) {
+      await storageRef.putFile(imageFile);
+    } else if (imageFile is Uint8List) {
+      await storageRef.putData(imageFile);
+    } else {
+      throw Exception('Tipo de arquivo não suportado');
+    }
+
+    final downloadUrl = await storageRef.getDownloadURL();
+    await updateProfile(photoUrl: downloadUrl);
+    return downloadUrl;
   }
 }
 

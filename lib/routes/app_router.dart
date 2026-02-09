@@ -9,6 +9,7 @@ import '../screens/settings/settings_screen.dart';
 import '../screens/budget/new_budget_screen.dart';
 import '../screens/services/services_screen.dart';
 import '../screens/services/service_form_screen.dart';
+import '../screens/settings/edit_profile_screen.dart';
 import '../screens/budget/budgets_screen.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../widgets/scaffold_with_navigation.dart';
@@ -75,6 +76,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       // Full screen routes (outside shell)
+      GoRoute(
+        path: '/settings/profile',
+        builder: (context, state) => const EditProfileScreen(),
+      ),
       GoRoute(
         path: '/budget/new',
         builder: (context, state) => const NewBudgetScreen(),

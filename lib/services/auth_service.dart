@@ -102,6 +102,7 @@ class AuthService {
           uid: userCredential.user!.uid,
           email: userCredential.user!.email!,
           name: userCredential.user!.displayName ?? 'Usuário',
+          photoUrl: userCredential.user!.photoURL,
           createdAt: DateTime.now(),
         );
 

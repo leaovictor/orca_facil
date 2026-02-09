@@ -70,13 +70,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Perfil',
-                        style: Theme.of(context).textTheme.titleLarge,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Perfil',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () => context.push('/settings/profile'),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       ListTile(
-                        leading: const Icon(Icons.person),
+                        leading: user.photoUrl != null
+                            ? CircleAvatar(
+                                backgroundImage: NetworkImage(user.photoUrl!),
+                              )
+                            : const Icon(Icons.person),
                         title: const Text('Nome'),
                         subtitle: Text(user.name),
                       ),

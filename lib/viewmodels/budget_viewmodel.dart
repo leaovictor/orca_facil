@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/firestore_service.dart';
 import '../services/pdf_service.dart';
+import '../services/whatsapp_service.dart';
 import '../models/budget_model.dart';
 import '../models/client_model.dart';
 import '../models/user_model.dart';
@@ -9,6 +10,11 @@ import 'auth_viewmodel.dart';
 
 // PDF Service Provider
 final pdfServiceProvider = Provider<PdfService>((ref) => PdfService());
+
+// WhatsApp Service Provider
+final whatsappServiceProvider = Provider<WhatsAppService>(
+  (ref) => WhatsAppService(),
+);
 
 // Budgets Stream Provider
 final budgetsProvider = StreamProvider.family<List<BudgetModel>, String>((
@@ -54,6 +60,8 @@ class BudgetViewModel extends StateNotifier<AsyncValue<BudgetModel?>> {
         items: items,
         total: total,
         createdAt: DateTime.now(),
+        validityDays: 7, // Default
+        warrantyDays: 90, // Default
       );
 
       // Save to Firestore
@@ -130,6 +138,25 @@ class BudgetViewModel extends StateNotifier<AsyncValue<BudgetModel?>> {
   // Reset state
   void reset() {
     state = const AsyncValue.data(null);
+  }
+
+  // Send budget via WhatsApp
+  Future<bool> sendBudgetViaWhatsApp({
+    required BudgetModel budget,
+    required UserModel user,
+    String? pdfUrl,
+  }) async {
+    try {
+      final whatsappService = WhatsAppService();
+      return await whatsappService.sendBudgetViaWhatsApp(
+        phone: budget.clientPhone,
+        budget: budget,
+        user: user,
+        pdfUrl: pdfUrl,
+      );
+    } catch (e) {
+      return false;
+    }
   }
 }
 

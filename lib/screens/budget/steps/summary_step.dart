@@ -65,20 +65,11 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
         throw Exception('Dados da assinatura não encontrados');
       }
 
-      // Generate and share PDF using ViewModel method
-      await ref
-          .read(budgetViewModelProvider.notifier)
-          .generateAndSharePdf(
-            budget: createdBudget,
-            user: userModel,
-            subscription: subscription,
-          );
-
       if (mounted) {
         // Reset wizard
         resetWizard(ref);
 
-        // Show success and return to dashboard
+        // Show success and navigate to preview
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Orçamento criado com sucesso!'),
@@ -86,7 +77,11 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
           ),
         );
 
-        context.go('/dashboard');
+        context.go('/budgets'); // Voltar para a lista
+        context.push(
+          '/budget/preview',
+          extra: createdBudget,
+        ); // Abrir o preview em cima
       }
     } catch (e) {
       setState(() => _isCreating = false);

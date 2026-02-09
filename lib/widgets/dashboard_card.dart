@@ -5,6 +5,7 @@ class DashboardCard extends StatelessWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
+  final String? badge; // Optional badge (e.g., "⭐" for Premium features)
 
   const DashboardCard({
     super.key,
@@ -12,6 +13,7 @@ class DashboardCard extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.onTap,
+    this.badge,
   });
 
   @override
@@ -23,32 +25,42 @@ class DashboardCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
-        child: Container(
-          height: 180, // Fixed height constraint
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 40, color: color),
+        child: Stack(
+          children: [
+            Container(
+              height: 180, // Fixed height constraint
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, size: 40, color: color),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              Text(
-                title,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+            ),
+            if (badge != null)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Text(badge!, style: const TextStyle(fontSize: 20)),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );

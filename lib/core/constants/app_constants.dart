@@ -28,6 +28,7 @@ class AppConstants {
 
   // Storage Paths
   static const String logosPath = 'user_logos';
+  static const String profileImagesPath = 'profile_images';
 
   // Default Services (can be used as initial data)
   static const List<Map<String, dynamic>> defaultServices = [

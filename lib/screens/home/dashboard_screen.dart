@@ -126,6 +126,25 @@ class DashboardScreen extends ConsumerWidget {
                                     '/services',
                                   ), // Use go for shell route
                                 ),
+                                // Reports card (Premium only)
+                                Consumer(
+                                  builder: (context, ref, child) {
+                                    final subscription = ref
+                                        .watch(subscriptionProvider(user.uid))
+                                        .value;
+
+                                    return DashboardCard(
+                                      title: 'Relatórios',
+                                      icon: Icons.assessment_outlined,
+                                      color: Colors.purple[700]!,
+                                      onTap: () => context.push('/reports'),
+                                      badge:
+                                          subscription?.tier.name == 'premium'
+                                          ? null
+                                          : '⭐',
+                                    );
+                                  },
+                                ),
                                 DashboardCard(
                                   title: 'Configurações',
                                   icon: Icons.settings_outlined,

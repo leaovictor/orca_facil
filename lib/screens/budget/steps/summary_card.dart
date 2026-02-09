@@ -149,6 +149,32 @@ class SummaryCard extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
+                                const SizedBox(height: 2),
+                                Wrap(
+                                  spacing: 8,
+                                  children: [
+                                    if (item.difficulty != null)
+                                      _buildBadge(
+                                        context,
+                                        item.difficulty!,
+                                        Colors.orange,
+                                      ),
+                                    if (item.environment != null)
+                                      _buildBadge(
+                                        context,
+                                        item.environment!,
+                                        Colors.blue,
+                                      ),
+                                    if (item.distance != null &&
+                                        item.distance! > 0)
+                                      _buildBadge(
+                                        context,
+                                        '${item.distance}m',
+                                        Colors.green,
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
                                 Text(
                                   '${item.quantity}x ${Formatters.formatCurrency(item.unitPrice)}',
                                   style: Theme.of(context).textTheme.bodySmall
@@ -191,6 +217,25 @@ class SummaryCard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildBadge(BuildContext context, String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withOpacity(0.5), width: 0.5),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 

@@ -75,6 +75,16 @@ dependencies:
   http: ^1.6.0
   shared_preferences: ^2.5.4
   url_launcher: ^6.3.2
+  
+  # Charts for Dashboard
+  fl_chart: ^0.69.0
+  
+  # Excel Export for Reports
+  excel: ^4.0.6
+  
+  # Notifications for Recurring Budgets
+  flutter_local_notifications: ^17.2.3
+  timezone: ^0.9.4
 
 dev_dependencies:
   flutter_test:
@@ -100,7 +110,6 @@ flutter:
 
   # Assets
   assets:
-    - assets/images/
     - assets/logo/
 
   # An image asset can refer to one or more resolution-specific "variants", see

@@ -3,7 +3,13 @@ import 'package:go_router/go_router.dart';
 import '../screens/splash_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
-import '../screens/home/dashboard_screen.dart';
+import '../screens/home/dashboard_screen.dart' as home;
+import '../modules/dashboard/screens/dashboard_screen.dart' as financial;
+import '../modules/reports/screens/reports_screen.dart';
+import '../modules/reports/screens/monthly_revenue_screen.dart';
+import '../modules/reports/screens/top_services_screen.dart';
+import '../modules/reports/screens/recurring_clients_screen.dart';
+import '../modules/reports/screens/month_comparison_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/budget/new_budget_screen.dart';
 import '../screens/services/services_screen.dart';
@@ -11,6 +17,8 @@ import '../screens/services/service_form_screen.dart';
 import '../screens/settings/edit_profile_screen.dart';
 import '../screens/settings/subscription_screen.dart';
 import '../screens/budget/budgets_screen.dart';
+import '../screens/budget/pdf_preview_screen.dart';
+import '../models/budget_model.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../widgets/scaffold_with_navigation.dart';
 
@@ -59,7 +67,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: '/dashboard',
-            builder: (context, state) => const DashboardScreen(),
+            builder: (context, state) => const home.DashboardScreen(),
           ),
           GoRoute(
             path: '/budgets',
@@ -95,9 +103,45 @@ final routerProvider = Provider<GoRouter>((ref) {
           return ServiceFormScreen(serviceId: serviceId);
         },
       ),
+      // Financial Dashboard (Premium only)
+      GoRoute(
+        path: '/dashboard/financial',
+        builder: (context, state) => const financial.DashboardScreen(),
+      ),
+      // Reports (Premium only)
+      GoRoute(
+        path: '/reports',
+        builder: (context, state) => const ReportsScreen(),
+      ),
+      GoRoute(
+        path: '/reports/monthly-revenue',
+        builder: (context, state) {
+          // Import the screen at the top of the file
+          return const MonthlyRevenueScreen();
+        },
+      ),
+      GoRoute(
+        path: '/reports/top-services',
+        builder: (context, state) => const TopServicesScreen(),
+      ),
+      GoRoute(
+        path: '/reports/recurring-clients',
+        builder: (context, state) => const RecurringClientsScreen(),
+      ),
+      GoRoute(
+        path: '/reports/month-comparison',
+        builder: (context, state) => const MonthComparisonScreen(),
+      ),
       GoRoute(
         path: '/subscription',
         builder: (context, state) => const SubscriptionScreen(),
+      ),
+      GoRoute(
+        path: '/budget/preview',
+        builder: (context, state) {
+          final budget = state.extra as BudgetModel;
+          return PdfPreviewScreen(budget: budget);
+        },
       ),
     ],
   );

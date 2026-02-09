@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-enum SubscriptionTier { free, pro }
+enum SubscriptionTier { free, pro, premium }
 
 class SubscriptionModel {
   final String userId;
@@ -21,14 +21,66 @@ class SubscriptionModel {
 
   // Check if user has reached free tier limit
   bool get hasReachedFreeLimit =>
-      tier == SubscriptionTier.free && budgetCount >= 5;
+      tier == SubscriptionTier.free && budgetCount >= 3;
 
   // Check if user can create budgets
   bool get canCreateBudget {
-    if (tier == SubscriptionTier.pro && isActive) {
+    if ((tier == SubscriptionTier.pro || tier == SubscriptionTier.premium) &&
+        isActive) {
       return true;
     }
     return !hasReachedFreeLimit;
+  }
+
+  // Premium Features Access Control
+
+  /// Dashboard access - Premium only
+  bool get canAccessDashboard => tier == SubscriptionTier.premium && isActive;
+
+  /// Reports access - Premium only
+  bool get canAccessReports => tier == SubscriptionTier.premium && isActive;
+
+  /// Excel export - Premium only
+  bool get canExportExcel => tier == SubscriptionTier.premium && isActive;
+
+  /// Recurring budgets - Premium only
+  bool get canCreateRecurrence => tier == SubscriptionTier.premium && isActive;
+
+  /// WhatsApp integration - Pro and Premium
+  bool get canUseWhatsApp =>
+      (tier == SubscriptionTier.pro || tier == SubscriptionTier.premium) &&
+      isActive;
+
+  /// PDF should have watermark - Free only
+  bool get hasWatermark => tier == SubscriptionTier.free;
+
+  /// Can save clients - Pro and Premium
+  bool get canSaveClients =>
+      (tier == SubscriptionTier.pro || tier == SubscriptionTier.premium) &&
+      isActive;
+
+  /// Get tier display name
+  String get tierDisplayName {
+    switch (tier) {
+      case SubscriptionTier.free:
+        return 'Gratuito';
+      case SubscriptionTier.pro:
+        return 'Pro';
+      case SubscriptionTier.premium:
+        return 'Premium';
+    }
+  }
+
+  /// Get tier price
+  String get tierPrice {
+    switch (tier) {
+      case SubscriptionTier.free:
+        return 'R\$ 0,00';
+      case SubscriptionTier.pro:
+        return 'R\$ 19,90/mês';
+      case SubscriptionTier.premium:
+        return 'R\$ 29,90/mês';
+    }
   }
 
   // Check if subscription is expired

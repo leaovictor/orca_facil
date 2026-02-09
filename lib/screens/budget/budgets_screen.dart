@@ -25,49 +25,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
   }
 
   Future<void> _previewBudget(BudgetModel budget) async {
-    final user = ref.read(currentUserProvider).value;
-    if (user == null) return;
-    final subscription = ref.read(subscriptionProvider(user.uid)).value;
-    if (subscription == null) return;
-
-    // Show loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      final pdfBytes = await ref
-          .read(pdfServiceProvider)
-          .generateBudgetPdf(
-            budget: budget,
-            user: user,
-            subscription: subscription,
-          );
-
-      if (mounted) {
-        Navigator.of(context, rootNavigator: true).pop(); // Close loading
-      }
-
-      await ref.read(pdfServiceProvider).printPdf(pdfBytes);
-    } catch (e) {
-      if (mounted) {
-        // If error happened before pop, we need to pop.
-        // The issue is distinguishing.
-        // Simple fix: Check if we can pop.
-        if (Navigator.canPop(context)) {
-          Navigator.of(context, rootNavigator: true).pop();
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao gerar PDF: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
+    context.push('/budget/preview', extra: budget);
   }
 
   void _deleteBudget(String budgetId) {
@@ -117,6 +75,43 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
     );
   }
 
+  Future<void> _sendViaWhatsApp({
+    required BudgetModel budget,
+    required String userId,
+  }) async {
+    try {
+      final user = ref.read(currentUserProvider).value;
+      if (user == null) return;
+
+      final success = await ref
+          .read(budgetViewModelProvider.notifier)
+          .sendBudgetViaWhatsApp(
+            budget: budget,
+            user: user,
+            pdfUrl: null, // Could upload PDF to Firebase Storage and pass URL
+          );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success
+                  ? 'WhatsApp aberto com sucesso!'
+                  : 'Erro ao abrir WhatsApp. Verifique se está instalado.',
+            ),
+            backgroundColor: success ? Colors.green : Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProvider);
@@ -139,6 +134,7 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
           }
 
           final budgetsAsync = ref.watch(budgetsProvider(user.uid));
+          final subscriptionAsync = ref.watch(subscriptionProvider(user.uid));
 
           return Column(
             children: [
@@ -173,6 +169,10 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
               Expanded(
                 child: budgetsAsync.when(
                   data: (budgets) {
+                    final subscription = subscriptionAsync.value;
+                    final canUseWhatsApp =
+                        subscription?.canUseWhatsApp ?? false;
+
                     final filteredBudgets = _searchQuery.isEmpty
                         ? budgets
                         : budgets.where((b) {
@@ -229,7 +229,14 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                             _previewBudget(budget);
                           },
                           onShare: () => _previewBudget(budget),
+                          onWhatsApp: canUseWhatsApp
+                              ? () => _sendViaWhatsApp(
+                                  budget: budget,
+                                  userId: user.uid,
+                                )
+                              : null,
                           onDelete: () => _deleteBudget(budget.id),
+                          canUseWhatsApp: canUseWhatsApp,
                         );
                       },
                     );

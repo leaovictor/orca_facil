@@ -4,15 +4,23 @@ class BudgetItem {
   final String serviceId;
   final String serviceName;
   final String serviceDescription;
+  final double basePrice;
   final double unitPrice;
   final int quantity;
+  final String? difficulty;
+  final double? distance;
+  final String? environment;
 
   BudgetItem({
     required this.serviceId,
     required this.serviceName,
     required this.serviceDescription,
+    required this.basePrice,
     required this.unitPrice,
     required this.quantity,
+    this.difficulty,
+    this.distance,
+    this.environment,
   });
 
   double get total => unitPrice * quantity;
@@ -22,8 +30,12 @@ class BudgetItem {
       'serviceId': serviceId,
       'serviceName': serviceName,
       'serviceDescription': serviceDescription,
+      'basePrice': basePrice,
       'unitPrice': unitPrice,
       'quantity': quantity,
+      'difficulty': difficulty,
+      'distance': distance,
+      'environment': environment,
     };
   }
 
@@ -32,8 +44,12 @@ class BudgetItem {
       serviceId: map['serviceId'] ?? '',
       serviceName: map['serviceName'] ?? '',
       serviceDescription: map['serviceDescription'] ?? '',
+      basePrice: (map['basePrice'] ?? (map['unitPrice'] ?? 0.0)).toDouble(),
       unitPrice: (map['unitPrice'] ?? 0.0).toDouble(),
       quantity: map['quantity'] ?? 0,
+      difficulty: map['difficulty'],
+      distance: (map['distance'] as num?)?.toDouble(),
+      environment: map['environment'],
     );
   }
 }
@@ -50,6 +66,8 @@ class BudgetModel {
   final double total;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final int validityDays;
+  final int warrantyDays;
 
   BudgetModel({
     required this.id,
@@ -63,6 +81,8 @@ class BudgetModel {
     required this.total,
     required this.createdAt,
     this.updatedAt,
+    this.validityDays = 7,
+    this.warrantyDays = 90,
   });
 
   // Convert to Map for Firestore
@@ -79,6 +99,8 @@ class BudgetModel {
       'total': total,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
+      'validityDays': validityDays,
+      'warrantyDays': warrantyDays,
     };
   }
 
@@ -102,6 +124,8 @@ class BudgetModel {
       updatedAt: map['updatedAt'] != null
           ? (map['updatedAt'] as Timestamp).toDate()
           : null,
+      validityDays: map['validityDays'] ?? 7,
+      warrantyDays: map['warrantyDays'] ?? 90,
     );
   }
 
@@ -126,6 +150,8 @@ class BudgetModel {
     double? total,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? validityDays,
+    int? warrantyDays,
   }) {
     return BudgetModel(
       id: id ?? this.id,
@@ -139,6 +165,8 @@ class BudgetModel {
       total: total ?? this.total,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      validityDays: validityDays ?? this.validityDays,
+      warrantyDays: warrantyDays ?? this.warrantyDays,
     );
   }
 }

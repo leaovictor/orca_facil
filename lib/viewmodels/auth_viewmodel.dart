@@ -6,6 +6,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../models/user_model.dart';
+import '../core/constants/app_constants.dart';
 
 // Auth Service Provider
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());
@@ -135,13 +136,18 @@ class AuthViewModel extends StateNotifier<AsyncValue<void>> {
 
     final storageRef = FirebaseStorage.instance
         .ref()
-        .child('profile_images')
+        .child(AppConstants.profileImagesPath)
         .child('${user.uid}.jpg');
 
+    final metadata = SettableMetadata(
+      contentType: 'image/jpeg',
+      customMetadata: {'uploaded_by': user.uid},
+    );
+
     if (imageFile is File) {
-      await storageRef.putFile(imageFile);
+      await storageRef.putFile(imageFile, metadata);
     } else if (imageFile is Uint8List) {
-      await storageRef.putData(imageFile);
+      await storageRef.putData(imageFile, metadata);
     } else {
       throw Exception('Tipo de arquivo não suportado');
     }

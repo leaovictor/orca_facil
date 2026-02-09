@@ -1,9 +1,9 @@
 import 'dart:typed_data';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import '../models/budget_model.dart';
 import '../models/user_model.dart';
 import '../models/subscription_model.dart';
@@ -38,59 +38,58 @@ class PdfService {
       theme: pw.ThemeData.withFont(base: baseFont, bold: boldFont),
     );
 
-    // Load logo if available
+    // Load User Logo if available
     pw.MemoryImage? logoImage;
-    if (user.logoUrl != null && subscription.tier == SubscriptionTier.pro) {
+    if (user.logoUrl != null && subscription.tier != SubscriptionTier.free) {
       try {
         final imageData = await networkImageToBytes(user.logoUrl!);
         logoImage = pw.MemoryImage(imageData);
-      } catch (e) {
-        // If logo fails to load, continue without it
-        logoImage = null;
-      }
-    } else {
-      // Use default logo from assets
-      try {
-        final bytes = await rootBundle.load('assets/logo/logo.png');
-        logoImage = pw.MemoryImage(bytes.buffer.asUint8List());
       } catch (e) {
         logoImage = null;
       }
     }
 
+    // Load Orça+ Logo (App Branding) fallback
+    pw.MemoryImage? appLogo;
+    try {
+      final logoData = await rootBundle.load('assets/logo/logo.png');
+      appLogo = pw.MemoryImage(logoData.buffer.asUint8List());
+    } catch (e) {
+      appLogo = null;
+    }
+
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(24),
+        margin: const pw.EdgeInsets.all(32),
         build: (pw.Context context) {
           return [
-            // 1. Header & Identification
-            _buildHeader(logoImage, user, budget),
-            pw.SizedBox(height: 12),
+            // 1. Header
+            _buildHeader(logoImage ?? appLogo, user, budget, boldFont),
+            pw.SizedBox(height: 20),
 
-            // Client Block (Unified)
-            // Using Wrap to ensure it stays together if possible, though Container usually handles this.
+            // 2. Client Info
             _buildClientSection(budget),
-            pw.SizedBox(height: 16),
-
-            // 2. Services Table (Optimized)
-            _buildServicesTable(budget),
-            pw.SizedBox(height: 16),
-
-            // 3. Payment & Conditions
-            if (user.pixKey != null && user.pixKey!.isNotEmpty) ...[
-              _buildPaymentSection(user, budget),
-              pw.SizedBox(height: 12),
-            ],
-
-            // Rules Text
-            _buildTermsSection(),
             pw.SizedBox(height: 24),
 
-            // Signature
-            _buildFooter(),
+            // 3. Services Table
+            _buildServicesTable(budget),
+            pw.SizedBox(height: 24),
 
-            // 4. Watermark (Monetization)
+            // 4. Payment & QR (Optional)
+            if (user.pixKey != null && user.pixKey!.isNotEmpty) ...[
+              _buildPaymentSection(user, budget),
+              pw.SizedBox(height: 24),
+            ],
+
+            // 5. Conditions & Terms
+            _buildTermsSection(budget),
+            pw.SizedBox(height: 40),
+
+            // 6. Signature
+            _buildSignatureBlock(),
+
+            // Watermark for FREE tier
             if (subscription.tier == SubscriptionTier.free) _buildWatermark(),
           ];
         },
@@ -104,69 +103,59 @@ class PdfService {
     pw.MemoryImage? logo,
     UserModel user,
     BudgetModel budget,
+    pw.Font boldFont,
   ) {
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        // Left: Logo + User Info
-        pw.Expanded(
-          child: pw.Row(
+        if (logo != null)
+          pw.Container(width: 80, height: 80, child: pw.Image(logo))
+        else
+          pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              if (logo != null)
-                pw.Container(
-                  width: 60,
-                  height: 60,
-                  margin: const pw.EdgeInsets.only(right: 12),
-                  child: pw.Image(logo),
+              pw.Text(
+                user.name.toUpperCase(),
+                style: pw.TextStyle(
+                  fontSize: 18,
+                  fontWeight: pw.FontWeight.bold,
+                  font: boldFont,
+                  color: PdfColors.blue900,
                 ),
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Text(
-                      user.name,
-                      style: pw.TextStyle(
-                        fontSize: 16,
-                        fontWeight: pw.FontWeight.bold,
-                      ),
-                    ),
-                    pw.SizedBox(height: 4),
-                    if (user.phone != null)
-                      pw.Text(
-                        Formatters.formatPhone(user.phone!),
-                        style: const pw.TextStyle(fontSize: 10),
-                      ),
-                    pw.Text(
-                      user.email,
-                      style: const pw.TextStyle(fontSize: 10),
-                    ),
-                  ],
+              ),
+              pw.Text(
+                'SOLUÇÕES ELÉTRICAS',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey700,
+                  font: boldFont,
                 ),
               ),
             ],
           ),
-        ),
-        // Right: Budget Summary
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.end,
           children: [
             pw.Text(
-              'ORÇAMENTO',
+              'PROPOSTA COMERCIAL',
               style: pw.TextStyle(
-                fontSize: 20,
+                fontSize: 22,
                 fontWeight: pw.FontWeight.bold,
-                color: PdfColors.blue700,
+                font: boldFont,
+                color: PdfColors.blue900,
               ),
             ),
             pw.SizedBox(height: 4),
             pw.Text(
               'Nº ${Formatters.formatBudgetNumber(budget.budgetNumber)}',
-              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+              style: pw.TextStyle(
+                fontSize: 14,
+                fontWeight: pw.FontWeight.bold,
+                font: boldFont,
+              ),
             ),
             pw.Text(
-              'Data: ${Formatters.formatDate(budget.createdAt)}',
+              'Emissão: ${Formatters.formatDate(budget.createdAt)}',
               style: const pw.TextStyle(fontSize: 10),
             ),
           ],
@@ -177,85 +166,38 @@ class PdfService {
 
   pw.Widget _buildClientSection(BudgetModel budget) {
     return pw.Container(
-      width: double.infinity,
-      padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: pw.BoxDecoration(
+      padding: const pw.EdgeInsets.all(12),
+      decoration: const pw.BoxDecoration(
         color: PdfColors.grey100,
-        borderRadius: pw.BorderRadius.circular(4),
-        border: pw.Border.all(color: PdfColors.grey300),
+        border: pw.Border(
+          left: pw.BorderSide(color: PdfColors.blue900, width: 4),
+        ),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           pw.Text(
-            'DADOS DO CLIENTE',
+            'CLIENTE',
             style: pw.TextStyle(
               fontSize: 10,
               fontWeight: pw.FontWeight.bold,
-              color: PdfColors.blue700,
+              color: PdfColors.blue900,
             ),
           ),
           pw.SizedBox(height: 6),
-          pw.Row(
-            children: [
-              pw.Expanded(
-                flex: 2,
-                child: pw.RichText(
-                  text: pw.TextSpan(
-                    text: 'Nome: ',
-                    style: pw.TextStyle(
-                      fontWeight: pw.FontWeight.bold,
-                      fontSize: 10,
-                    ),
-                    children: [
-                      pw.TextSpan(
-                        text: budget.clientName,
-                        style: pw.TextStyle(fontWeight: pw.FontWeight.normal),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (budget.clientPhone.isNotEmpty)
-                pw.Expanded(
-                  flex: 1,
-                  child: pw.RichText(
-                    text: pw.TextSpan(
-                      text: 'Tel: ',
-                      style: pw.TextStyle(
-                        fontWeight: pw.FontWeight.bold,
-                        fontSize: 10,
-                      ),
-                      children: [
-                        pw.TextSpan(
-                          text: Formatters.formatPhone(budget.clientPhone),
-                          style: pw.TextStyle(fontWeight: pw.FontWeight.normal),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-            ],
+          pw.Text(
+            budget.clientName,
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
           ),
-          if (budget.clientAddress != null &&
-              budget.clientAddress!.isNotEmpty) ...[
-            pw.SizedBox(height: 4),
-            pw.RichText(
-              text: pw.TextSpan(
-                text: 'Endereço: ',
-                style: pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 10,
-                ),
-                children: [
-                  pw.TextSpan(
-                    text: budget.clientAddress!,
-                    style: pw.TextStyle(fontWeight: pw.FontWeight.normal),
-                  ),
-                ],
-              ),
+          pw.Text(
+            Formatters.formatPhone(budget.clientPhone),
+            style: const pw.TextStyle(fontSize: 11),
+          ),
+          if (budget.clientAddress != null)
+            pw.Text(
+              budget.clientAddress!,
+              style: const pw.TextStyle(fontSize: 11),
             ),
-          ],
         ],
       ),
     );
@@ -263,91 +205,111 @@ class PdfService {
 
   pw.Widget _buildServicesTable(BudgetModel budget) {
     return pw.Table(
-      border: pw.TableBorder.all(color: PdfColors.grey300),
+      border: pw.TableBorder.symmetric(
+        inside: const pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+      ),
       columnWidths: {
         0: const pw.FlexColumnWidth(3), // Serviço
-        1: const pw.FlexColumnWidth(3), // Descrição
-        2: const pw.FlexColumnWidth(1), // Qtd
-        3: const pw.FlexColumnWidth(1.5), // V. Unit
-        4: const pw.FlexColumnWidth(1.5), // Total
+        1: const pw.FlexColumnWidth(2), // Detalhes
+        2: const pw.FlexColumnWidth(0.8), // Qtd
+        3: const pw.FlexColumnWidth(1.2), // V. Unit
+        4: const pw.FlexColumnWidth(1.2), // Total
       },
       children: [
         // Header
         pw.TableRow(
-          decoration: const pw.BoxDecoration(color: PdfColors.blue700),
+          decoration: const pw.BoxDecoration(color: PdfColors.blue900),
           children: [
-            _buildTableCell('Serviço', isHeader: true),
-            _buildTableCell('Descrição', isHeader: true),
-            _buildTableCell('Qtd', isHeader: true, align: pw.TextAlign.center),
-            _buildTableCell(
-              'V. Unit',
-              isHeader: true,
-              align: pw.TextAlign.right,
-            ),
-            _buildTableCell('Total', isHeader: true, align: pw.TextAlign.right),
+            _buildTableHeader('SERVIÇO'),
+            _buildTableHeader('ESPECIFICAÇÕES'),
+            _buildTableHeader('QTD', align: pw.TextAlign.center),
+            _buildTableHeader('UNITÁRIO', align: pw.TextAlign.right),
+            _buildTableHeader('TOTAL', align: pw.TextAlign.right),
           ],
         ),
-        // Services Items
-        ...budget.items.asMap().entries.map((entry) {
-          final index = entry.key;
-          final item = entry.value;
-          final isEven = index % 2 == 0;
-          return pw.TableRow(
-            decoration: pw.BoxDecoration(
-              color: isEven ? PdfColors.white : PdfColors.grey50,
-            ),
+        // Items
+        ...budget.items.map(
+          (item) => pw.TableRow(
             children: [
-              _buildTableCell(item.serviceName),
-              _buildTableCell(item.serviceDescription),
-              _buildTableCell(
+              pw.Padding(
+                padding: const pw.EdgeInsets.all(8),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      item.serviceName,
+                      style: pw.TextStyle(
+                        fontWeight: pw.FontWeight.bold,
+                        fontSize: 10,
+                      ),
+                    ),
+                    pw.Text(
+                      item.serviceDescription,
+                      style: const pw.TextStyle(
+                        fontSize: 8,
+                        color: PdfColors.grey700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              pw.Padding(
+                padding: const pw.EdgeInsets.all(8),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    if (item.difficulty != null)
+                      _buildDetailText('Dificuldade: ${item.difficulty}'),
+                    if (item.environment != null)
+                      _buildDetailText('Ambiente: ${item.environment}'),
+                    if (item.distance != null && item.distance! > 0)
+                      _buildDetailText('Distância: ${item.distance}m'),
+                  ],
+                ),
+              ),
+              _buildTableBody(
                 item.quantity.toString(),
                 align: pw.TextAlign.center,
               ),
-              _buildTableCell(
+              _buildTableBody(
                 Formatters.formatCurrency(item.unitPrice),
                 align: pw.TextAlign.right,
               ),
-              _buildTableCell(
+              _buildTableBody(
                 Formatters.formatCurrency(item.total),
                 align: pw.TextAlign.right,
+                isBold: true,
               ),
             ],
-          );
-        }),
-        // Total Line
+          ),
+        ),
+        // Summary Row
         pw.TableRow(
-          decoration: const pw.BoxDecoration(color: PdfColors.blue50),
+          decoration: const pw.BoxDecoration(color: PdfColors.grey200),
           children: [
             pw.SizedBox(),
             pw.SizedBox(),
             pw.SizedBox(),
             pw.Padding(
-              padding: const pw.EdgeInsets.symmetric(
-                vertical: 6,
-                horizontal: 6,
-              ),
+              padding: const pw.EdgeInsets.all(10),
               child: pw.Text(
-                'TOTAL:',
-                textAlign: pw.TextAlign.right,
+                'VALOR TOTAL',
                 style: pw.TextStyle(
                   fontWeight: pw.FontWeight.bold,
-                  fontSize: 10,
+                  fontSize: 11,
                 ),
               ),
             ),
             pw.Padding(
-              padding: const pw.EdgeInsets.symmetric(
-                vertical: 6,
-                horizontal: 6,
-              ),
+              padding: const pw.EdgeInsets.all(10),
               child: pw.Text(
                 Formatters.formatCurrency(budget.total),
-                textAlign: pw.TextAlign.right,
                 style: pw.TextStyle(
                   fontWeight: pw.FontWeight.bold,
-                  fontSize: 10,
-                  color: PdfColors.blue700,
+                  fontSize: 14,
+                  color: PdfColors.blue900,
                 ),
+                textAlign: pw.TextAlign.right,
               ),
             ),
           ],
@@ -356,77 +318,97 @@ class PdfService {
     );
   }
 
-  pw.Widget _buildTableCell(
+  pw.Widget _buildTableHeader(
     String text, {
-    bool isHeader = false,
     pw.TextAlign align = pw.TextAlign.left,
   }) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+      padding: const pw.EdgeInsets.all(10),
       child: pw.Text(
         text,
         style: pw.TextStyle(
+          color: PdfColors.white,
+          fontWeight: pw.FontWeight.bold,
           fontSize: 9,
-          fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
-          color: isHeader ? PdfColors.white : PdfColors.black,
         ),
         textAlign: align,
       ),
     );
   }
 
+  pw.Widget _buildTableBody(
+    String text, {
+    pw.TextAlign align = pw.TextAlign.left,
+    bool isBold = false,
+  }) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.all(8),
+      child: pw.Text(
+        text,
+        style: pw.TextStyle(
+          fontSize: 10,
+          fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
+        ),
+        textAlign: align,
+      ),
+    );
+  }
+
+  pw.Widget _buildDetailText(String text) {
+    return pw.Text(
+      text,
+      style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+    );
+  }
+
   pw.Widget _buildPaymentSection(UserModel user, BudgetModel budget) {
-    // Generate Pix Payload
     final pixPayload = PixPayload(
       key: user.pixKey!,
       name: user.name,
-      city: 'BRASIL',
-      // amount: budget.total, // Optional
+      city: 'SAO PAULO', // Default
     ).generatePayload();
 
     return pw.Container(
-      padding: const pw.EdgeInsets.all(10),
+      padding: const pw.EdgeInsets.all(16),
       decoration: pw.BoxDecoration(
         border: pw.Border.all(color: PdfColors.grey300),
-        borderRadius: pw.BorderRadius.circular(4),
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
       ),
       child: pw.Row(
         children: [
-          // QR Code
           pw.BarcodeWidget(
             data: pixPayload,
             barcode: pw.Barcode.qrCode(),
-            width: 70,
-            height: 70,
+            width: 80,
+            height: 80,
           ),
-          pw.SizedBox(width: 16),
-          // Info
+          pw.SizedBox(width: 20),
           pw.Expanded(
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.Text(
-                  'PAGAMENTO VIA PIX',
+                  'PAGAMENTO FACILITADO (PIX)',
                   style: pw.TextStyle(
-                    fontSize: 11,
                     fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.blue700,
+                    fontSize: 12,
+                    color: PdfColors.blue900,
                   ),
                 ),
                 pw.SizedBox(height: 4),
                 pw.Text(
-                  'Escaneie o QR Code ou use a chave abaixo:',
+                  'Aponte a câmera para pagar ou use a chave abaixo:',
                   style: const pw.TextStyle(
                     fontSize: 9,
-                    color: PdfColors.grey700,
+                    color: PdfColors.grey600,
                   ),
                 ),
-                pw.SizedBox(height: 4),
+                pw.SizedBox(height: 8),
                 pw.Text(
-                  'Chave Pix: ${user.pixKey}',
+                  'Chave: ${user.pixKey}',
                   style: pw.TextStyle(
-                    fontSize: 11,
                     fontWeight: pw.FontWeight.bold,
+                    fontSize: 11,
                   ),
                 ),
               ],
@@ -437,38 +419,61 @@ class PdfService {
     );
   }
 
-  pw.Widget _buildTermsSection() {
-    return pw.Container(
-      width: double.infinity,
-      padding: const pw.EdgeInsets.symmetric(vertical: 4),
-      child: pw.Text(
-        'Orçamento válido por 15 dias. Pagamento de 50% na aprovação e 50% na conclusão.',
-        style: pw.TextStyle(
-          fontSize: 9,
-          color: PdfColors.grey700,
-          fontStyle: pw.FontStyle.italic,
+  pw.Widget _buildTermsSection(BudgetModel budget) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'TERMOS E CONDIÇÕES',
+          style: pw.TextStyle(
+            fontSize: 10,
+            fontWeight: pw.FontWeight.bold,
+            color: PdfColors.blue900,
+          ),
         ),
-        textAlign: pw.TextAlign.center,
+        pw.SizedBox(height: 8),
+        _buildTermRow(
+          'Validade:',
+          'Esta proposta é válida por ${budget.validityDays} dias corridos.',
+        ),
+        _buildTermRow(
+          'Garantia:',
+          'Oferecemos garantia técnica de ${budget.warrantyDays} dias para os serviços listados.',
+        ),
+        _buildTermRow('Pagamento:', 'A combinar diretamente com o prestador.'),
+      ],
+    );
+  }
+
+  pw.Widget _buildTermRow(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 4),
+      child: pw.RichText(
+        text: pw.TextSpan(
+          text: '$label ',
+          style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+          children: [
+            pw.TextSpan(
+              text: value,
+              style: pw.TextStyle(fontWeight: pw.FontWeight.normal),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  pw.Widget _buildFooter() {
-    return pw.Column(
+  pw.Widget _buildSignatureBlock() {
+    return pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.center,
       children: [
-        pw.SizedBox(height: 10),
-        pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.center,
+        pw.Column(
           children: [
-            pw.Column(
-              children: [
-                pw.Container(width: 200, height: 1, color: PdfColors.black),
-                pw.SizedBox(height: 4),
-                pw.Text(
-                  'Assinatura do Cliente',
-                  style: const pw.TextStyle(fontSize: 10),
-                ),
-              ],
+            pw.Container(width: 250, height: 1, color: PdfColors.grey600),
+            pw.SizedBox(height: 4),
+            pw.Text(
+              'Aceite do Cliente',
+              style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600),
             ),
           ],
         ),
@@ -477,16 +482,35 @@ class PdfService {
   }
 
   pw.Widget _buildWatermark() {
-    return pw.Positioned(
-      bottom: 20,
-      left: 0,
-      right: 0,
+    return pw.FullPage(
+      ignoreMargins: true,
       child: pw.Center(
-        child: pw.Opacity(
-          opacity: 0.5,
-          child: pw.Text(
-            'OrçaFácil - Versão Gratuita',
-            style: const pw.TextStyle(fontSize: 12, color: PdfColors.grey500),
+        child: pw.Transform.rotate(
+          angle: -0.5, // ~-30 degrees diagonal
+          child: pw.Opacity(
+            opacity: 0.15,
+            child: pw.Column(
+              mainAxisSize: pw.MainAxisSize.min,
+              children: [
+                pw.Text(
+                  'VERSÃO GRATUITA',
+                  style: pw.TextStyle(
+                    fontSize: 70,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.grey600,
+                  ),
+                ),
+                pw.SizedBox(height: 10),
+                pw.Text(
+                  'Orça Fácil',
+                  style: pw.TextStyle(
+                    fontSize: 30,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.blue700,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -499,8 +523,8 @@ class PdfService {
       await Printing.sharePdf(
         bytes: pdfBytes,
         filename: '$fileName.pdf',
-        body: 'Segue orçamento em anexo',
-        subject: 'Orçamento $fileName',
+        body: 'Segue proposta de serviços elétricos em anexo.',
+        subject: 'Proposta $fileName',
       );
     } catch (e) {
       throw Exception('Erro ao compartilhar PDF: $e');

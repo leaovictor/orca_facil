@@ -6,14 +6,18 @@ class BudgetCard extends StatelessWidget {
   final BudgetModel budget;
   final VoidCallback onTap;
   final VoidCallback onShare;
+  final VoidCallback? onWhatsApp; // Optional WhatsApp share
   final VoidCallback onDelete;
+  final bool canUseWhatsApp; // Pro/Premium feature
 
   const BudgetCard({
     super.key,
     required this.budget,
     required this.onTap,
     required this.onShare,
+    this.onWhatsApp,
     required this.onDelete,
+    this.canUseWhatsApp = false,
   });
 
   @override
@@ -65,6 +69,19 @@ class BudgetCard extends StatelessWidget {
               const SizedBox(height: 4),
               Row(
                 children: [
+                  Icon(Icons.phone, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Text(
+                    Formatters.formatPhone(budget.clientPhone),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.grey[700]),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
                   Icon(Icons.attach_money, size: 16, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Text(
@@ -89,9 +106,30 @@ class BudgetCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
+
+                  // WhatsApp button (Pro/Premium only)
+                  if (canUseWhatsApp && onWhatsApp != null) ...[
+                    OutlinedButton.icon(
+                      onPressed: onWhatsApp,
+                      icon: const Icon(Icons.chat_bubble, size: 18),
+                      label: const Text('WhatsApp'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(
+                          0xFF25D366,
+                        ), // WhatsApp green
+                        side: const BorderSide(color: Color(0xFF25D366)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+
                   ElevatedButton.icon(
                     onPressed: onShare,
-                    icon: const Icon(Icons.share, size: 18),
+                    icon: const Icon(Icons.picture_as_pdf, size: 18),
                     label: const Text('PDF'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Theme.of(context).colorScheme.primary,

@@ -90,6 +90,25 @@ class BudgetViewModel extends StateNotifier<AsyncValue<BudgetModel?>> {
     }
   }
 
+  // Generate and preview PDF
+  Future<void> generateAndPreviewPdf({
+    required BudgetModel budget,
+    required UserModel user,
+    required SubscriptionModel subscription,
+  }) async {
+    try {
+      final pdfBytes = await _pdfService.generateBudgetPdf(
+        budget: budget,
+        user: user,
+        subscription: subscription,
+      );
+
+      await _pdfService.printPdf(pdfBytes);
+    } catch (e) {
+      throw Exception('Erro ao gerar preview do PDF: $e');
+    }
+  }
+
   // Search budgets
   Future<List<BudgetModel>> searchBudgets(String userId, String query) async {
     try {

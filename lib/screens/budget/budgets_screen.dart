@@ -24,46 +24,42 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
     super.dispose();
   }
 
-  Future<void> _shareBudget(BudgetModel budget) async {
+  Future<void> _previewBudget(BudgetModel budget) async {
     final user = ref.read(currentUserProvider).value;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erro: Usuário não identificado')),
-      );
-      return;
-    }
+    if (user == null) return;
+    final subscription = ref.read(subscriptionProvider(user.uid)).value;
+    if (subscription == null) return;
 
-    final subscriptionAsync = ref.read(subscriptionProvider(user.uid));
-    final subscription = subscriptionAsync.value;
-    if (subscription == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erro: Assinatura não identificada')),
-      );
-      return;
-    }
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
 
     try {
-      // Show loading indicator
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
-      );
-
-      await ref
-          .read(budgetViewModelProvider.notifier)
-          .generateAndSharePdf(
+      final pdfBytes = await ref
+          .read(pdfServiceProvider)
+          .generateBudgetPdf(
             budget: budget,
             user: user,
             subscription: subscription,
           );
 
       if (mounted) {
-        Navigator.pop(context); // Close loading
+        Navigator.of(context, rootNavigator: true).pop(); // Close loading
       }
+
+      await ref.read(pdfServiceProvider).printPdf(pdfBytes);
     } catch (e) {
       if (mounted) {
-        Navigator.pop(context); // Close loading
+        // If error happened before pop, we need to pop.
+        // The issue is distinguishing.
+        // Simple fix: Check if we can pop.
+        if (Navigator.canPop(context)) {
+          Navigator.of(context, rootNavigator: true).pop();
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro ao gerar PDF: $e'),
@@ -230,11 +226,9 @@ class _BudgetsScreenState extends ConsumerState<BudgetsScreen> {
                         return BudgetCard(
                           budget: budget,
                           onTap: () {
-                            // TODO: View details
-                            // For now, share PDF
-                            _shareBudget(budget);
+                            _previewBudget(budget);
                           },
-                          onShare: () => _shareBudget(budget),
+                          onShare: () => _previewBudget(budget),
                           onDelete: () => _deleteBudget(budget.id),
                         );
                       },

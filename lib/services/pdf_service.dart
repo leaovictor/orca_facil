@@ -9,7 +9,6 @@ import '../models/user_model.dart';
 import '../models/subscription_model.dart';
 import '../core/utils/formatters.dart';
 import '../core/utils/pix_utils.dart';
-import '../core/constants/app_constants.dart';
 
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -314,7 +313,7 @@ class PdfService {
               ),
             ],
           );
-        }).toList(),
+        }),
         // Total Line
         pw.TableRow(
           decoration: const pw.BoxDecoration(color: PdfColors.blue50),

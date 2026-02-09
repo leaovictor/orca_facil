@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../screens/splash_screen.dart';
@@ -10,6 +9,7 @@ import '../screens/budget/new_budget_screen.dart';
 import '../screens/services/services_screen.dart';
 import '../screens/services/service_form_screen.dart';
 import '../screens/settings/edit_profile_screen.dart';
+import '../screens/settings/subscription_screen.dart';
 import '../screens/budget/budgets_screen.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../widgets/scaffold_with_navigation.dart';
@@ -97,10 +97,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/subscription',
-        builder: (context, state) => Scaffold(
-          appBar: AppBar(title: const Text('Assinatura')),
-          body: const Center(child: Text('Subscription screen coming soon')),
-        ),
+        builder: (context, state) => const SubscriptionScreen(),
       ),
     ],
   );

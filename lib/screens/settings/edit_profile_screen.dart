@@ -114,8 +114,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       appBar: AppBar(title: const Text('Editar Perfil')),
       body: userAsync.when(
         data: (user) {
-          if (user == null)
+          if (user == null) {
             return const Center(child: Text('Usuário não encontrado'));
+          }
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),

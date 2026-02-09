@@ -58,8 +58,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       appBar: AppBar(title: const Text('Configurações')),
       body: userAsync.when(
         data: (user) {
-          if (user == null)
+          if (user == null) {
             return const Center(child: Text('Usuário não encontrado'));
+          }
 
           return ListView(
             padding: const EdgeInsets.all(16),

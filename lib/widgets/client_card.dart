@@ -61,9 +61,9 @@ class ClientCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    if (client.phone != null && client.phone!.isNotEmpty)
+                    if (client.phone.isNotEmpty)
                       Text(
-                        client.phone!,
+                        client.phone,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     if (client.address != null && client.address!.isNotEmpty)

@@ -14,6 +14,10 @@ class AppConstants {
   static const double proMonthlyPrice = 19.90;
   static const String proCurrency = 'BRL';
   static const String proProductId = 'orcamais_pro_monthly';
+  static const String stripePublishableKey =
+      'pk_test_51Syz9dInxIuKwyuipk7u2Igizr10uvL1THJ62PhN2uucCr8kF3F2fEZZrpele0ltGwKI3kl0HFO6KV1friTwLVwF00PIN94g6j'; // TODO: Add Stripe Publishable Key
+  static const String stripeProMonthlyUrl =
+      'https://buy.stripe.com/test_28E14nfXYgCFgrxdFn8og00'; // TODO: Add Stripe Payment Link
 
   // Firebase Collections
   static const String usersCollection = 'users';

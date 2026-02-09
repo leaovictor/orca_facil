@@ -1,16 +1,16 @@
-import 'dart:io';
 import 'dart:typed_data';
+import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import '../models/budget_model.dart';
 import '../models/user_model.dart';
 import '../models/subscription_model.dart';
 import '../core/utils/formatters.dart';
 import '../core/constants/app_constants.dart';
+
+import 'package:intl/date_symbol_data_local.dart';
 
 class PdfService {
   // Generate professional PDF
@@ -19,6 +19,9 @@ class PdfService {
     required UserModel user,
     required SubscriptionModel subscription,
   }) async {
+    // Ensure locale data is initialized
+    await initializeDateFormatting('pt_BR', null);
+
     final pdf = pw.Document();
 
     // Load logo if available
@@ -333,29 +336,14 @@ class PdfService {
     );
   }
 
-  // Save PDF to device
-  Future<String> savePdf(Uint8List pdfBytes, String fileName) async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/$fileName.pdf');
-      await file.writeAsBytes(pdfBytes);
-      return file.path;
-    } catch (e) {
-      throw Exception('Erro ao salvar PDF: $e');
-    }
-  }
-
   // Share PDF
   Future<void> sharePdf(Uint8List pdfBytes, String fileName) async {
     try {
-      final directory = await getTemporaryDirectory();
-      final file = File('${directory.path}/$fileName.pdf');
-      await file.writeAsBytes(pdfBytes);
-
-      await Share.shareXFiles(
-        [XFile(file.path)],
+      await Printing.sharePdf(
+        bytes: pdfBytes,
+        filename: '$fileName.pdf',
+        body: 'Segue orçamento em anexo',
         subject: 'Orçamento $fileName',
-        text: 'Segue orçamento em anexo',
       );
     } catch (e) {
       throw Exception('Erro ao compartilhar PDF: $e');
@@ -375,11 +363,14 @@ class PdfService {
 
   // Helper to convert network image to bytes
   Future<Uint8List> networkImageToBytes(String url) async {
-    final response = await HttpClient().getUrl(Uri.parse(url));
-    final bytes = await (await response.close()).fold<List<int>>(
-      [],
-      (previous, element) => previous..addAll(element),
-    );
-    return Uint8List.fromList(bytes);
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        return response.bodyBytes;
+      }
+      throw Exception('Failed to load image: ${response.statusCode}');
+    } catch (e) {
+      throw Exception('Error loading image: $e');
+    }
   }
 }

@@ -4,6 +4,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 import 'routes/app_router.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +19,9 @@ void main() async {
   } catch (e) {
     debugPrint('Firebase initialization error: $e');
   }
+
+  // Initialize locales
+  await initializeDateFormatting('pt_BR', null);
 
   runApp(const ProviderScope(child: OrcaMaisApp()));
 }
@@ -34,6 +40,12 @@ class OrcaMaisApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
       routerConfig: router,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('pt', 'BR')],
     );
   }
 }

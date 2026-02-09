@@ -5,6 +5,7 @@ import '../../widgets/custom_button.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/subscription_viewmodel.dart';
 import '../../core/theme/app_theme.dart';
+import '../../viewmodels/theme_viewmodel.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -217,14 +218,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 16),
-                      SwitchListTile(
-                        title: const Text('Modo escuro'),
-                        subtitle: const Text(
-                          'Alternar entre tema claro e escuro',
-                        ),
-                        value: user.isDarkMode,
-                        onChanged: (value) {
-                          // TODO: Implement theme toggle
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final themeMode = ref.watch(themeProvider);
+                          return SizedBox(
+                            width: double.infinity,
+                            child: SegmentedButton<ThemeMode>(
+                              segments: const [
+                                ButtonSegment<ThemeMode>(
+                                  value: ThemeMode.system,
+                                  label: Text('Auto'),
+                                  icon: Icon(Icons.brightness_auto),
+                                ),
+                                ButtonSegment<ThemeMode>(
+                                  value: ThemeMode.light,
+                                  label: Text('Claro'),
+                                  icon: Icon(Icons.light_mode),
+                                ),
+                                ButtonSegment<ThemeMode>(
+                                  value: ThemeMode.dark,
+                                  label: Text('Escuro'),
+                                  icon: Icon(Icons.dark_mode),
+                                ),
+                              ],
+                              selected: {themeMode},
+                              onSelectionChanged:
+                                  (Set<ThemeMode> newSelection) {
+                                    ref
+                                        .read(themeProvider.notifier)
+                                        .setTheme(newSelection.first);
+                                  },
+                            ),
+                          );
                         },
                       ),
                     ],

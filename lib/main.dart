@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
+import 'viewmodels/theme_viewmodel.dart';
 import 'routes/app_router.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -38,7 +39,7 @@ class OrcaMaisApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: ref.watch(themeProvider),
       routerConfig: router,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

@@ -156,6 +156,63 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
+                        'Informações de Pagamento',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Chave Pix para seus orçamentos',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        initialValue: user.pixKey,
+                        decoration: const InputDecoration(
+                          labelText: 'Chave Pix',
+                          hintText: 'CPF, Email, Telefone ou Aleatória',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.pix),
+                        ),
+                        onFieldSubmitted: (value) async {
+                          if (value.trim() == user.pixKey) return;
+
+                          try {
+                            await ref
+                                .read(authViewModelProvider.notifier)
+                                .updateProfile(pixKey: value.trim());
+
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Chave Pix atualizada!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Erro ao atualizar: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
                         'Aparência',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),

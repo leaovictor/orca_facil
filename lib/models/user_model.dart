@@ -6,6 +6,7 @@ class UserModel {
   final String name;
   final String? phone;
   final String? logoUrl;
+  final String? pixKey;
   final bool isDarkMode;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -16,6 +17,7 @@ class UserModel {
     required this.name,
     this.phone,
     this.logoUrl,
+    this.pixKey,
     this.isDarkMode = false,
     required this.createdAt,
     this.updatedAt,
@@ -29,6 +31,7 @@ class UserModel {
       'name': name,
       'phone': phone,
       'logoUrl': logoUrl,
+      'pixKey': pixKey,
       'isDarkMode': isDarkMode,
       'createdAt': Timestamp.fromDate(createdAt),
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
@@ -43,6 +46,7 @@ class UserModel {
       name: map['name'] ?? '',
       phone: map['phone'],
       logoUrl: map['logoUrl'],
+      pixKey: map['pixKey'],
       isDarkMode: map['isDarkMode'] ?? false,
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       updatedAt: map['updatedAt'] != null
@@ -63,6 +67,7 @@ class UserModel {
     String? name,
     String? phone,
     String? logoUrl,
+    String? pixKey,
     bool? isDarkMode,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -73,6 +78,7 @@ class UserModel {
       name: name ?? this.name,
       phone: phone ?? this.phone,
       logoUrl: logoUrl ?? this.logoUrl,
+      pixKey: pixKey ?? this.pixKey,
       isDarkMode: isDarkMode ?? this.isDarkMode,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

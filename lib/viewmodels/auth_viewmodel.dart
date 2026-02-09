@@ -95,6 +95,28 @@ class AuthViewModel extends StateNotifier<AsyncValue<void>> {
       await _authService.resetPassword(email);
     });
   }
+
+  // Update user profile
+  Future<void> updateProfile({
+    String? name,
+    String? phone,
+    String? pixKey,
+  }) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final user = _authService.currentUser;
+      if (user == null) throw Exception('Usuário não autenticado');
+
+      final updates = <String, dynamic>{};
+      if (name != null) updates['name'] = name;
+      if (phone != null) updates['phone'] = phone;
+      if (pixKey != null) updates['pixKey'] = pixKey;
+
+      if (updates.isNotEmpty) {
+        await _firestoreService.updateUser(user.uid, updates);
+      }
+    });
+  }
 }
 
 // Auth ViewModel Provider

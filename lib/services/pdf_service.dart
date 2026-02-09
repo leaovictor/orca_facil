@@ -8,6 +8,7 @@ import '../models/budget_model.dart';
 import '../models/user_model.dart';
 import '../models/subscription_model.dart';
 import '../core/utils/formatters.dart';
+import '../core/utils/pix_utils.dart';
 import '../core/constants/app_constants.dart';
 
 import 'package:intl/date_symbol_data_local.dart';
@@ -53,7 +54,7 @@ class PdfService {
             // Header with logo
             _buildHeader(logoImage, user, budget),
             pw.SizedBox(height: 24),
-            pw.Divider(thickness: 2, color: PdfColors.blue700),
+            pw.Divider(thickness: 1, color: PdfColors.grey400),
             pw.SizedBox(height: 24),
 
             // Client information
@@ -66,6 +67,17 @@ class PdfService {
 
             // Total
             _buildTotalSection(budget),
+            pw.SizedBox(height: 24),
+
+            // Payment / Pix Section
+            if (user.pixKey != null && user.pixKey!.isNotEmpty)
+              _buildPaymentSection(user, budget),
+
+            if (user.pixKey != null && user.pixKey!.isNotEmpty)
+              pw.SizedBox(height: 24),
+
+            // Terms
+            _buildTermsSection(),
             pw.SizedBox(height: 32),
 
             // Footer with signature
@@ -136,10 +148,11 @@ class PdfService {
 
   pw.Widget _buildClientSection(BudgetModel budget) {
     return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
+      padding: const pw.EdgeInsets.all(12),
       decoration: pw.BoxDecoration(
-        color: PdfColors.grey200,
-        borderRadius: pw.BorderRadius.circular(8),
+        color: PdfColors.grey100,
+        borderRadius: pw.BorderRadius.circular(4),
+        border: pw.Border.all(color: PdfColors.grey300),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -147,7 +160,7 @@ class PdfService {
           pw.Text(
             'DADOS DO CLIENTE',
             style: pw.TextStyle(
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: pw.FontWeight.bold,
               color: PdfColors.blue700,
             ),
@@ -155,20 +168,23 @@ class PdfService {
           pw.SizedBox(height: 8),
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    'Nome: ${budget.clientName}',
-                    style: const pw.TextStyle(fontSize: 12),
-                  ),
-                  pw.SizedBox(height: 4),
-                  pw.Text(
-                    'Telefone: ${Formatters.formatPhone(budget.clientPhone)}',
-                    style: const pw.TextStyle(fontSize: 12),
-                  ),
-                ],
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'Nome: ${budget.clientName}',
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
+                    pw.SizedBox(height: 4),
+                    pw.Text(
+                      'Telefone: ${Formatters.formatPhone(budget.clientPhone)}',
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
+                  ],
+                ),
               ),
               if (budget.clientAddress != null)
                 pw.Expanded(
@@ -176,8 +192,15 @@ class PdfService {
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
                       pw.Text(
-                        'Endereço: ${budget.clientAddress}',
-                        style: const pw.TextStyle(fontSize: 12),
+                        'Endereço:',
+                        style: pw.TextStyle(
+                          fontSize: 10,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
+                      ),
+                      pw.Text(
+                        budget.clientAddress!,
+                        style: const pw.TextStyle(fontSize: 10),
                         textAlign: pw.TextAlign.right,
                       ),
                     ],
@@ -192,13 +215,13 @@ class PdfService {
 
   pw.Widget _buildServicesTable(BudgetModel budget) {
     return pw.Table(
-      border: pw.TableBorder.all(color: PdfColors.grey400),
+      border: pw.TableBorder.all(color: PdfColors.grey300),
       columnWidths: {
-        0: const pw.FlexColumnWidth(3),
-        1: const pw.FlexColumnWidth(2),
-        2: const pw.FlexColumnWidth(1),
-        3: const pw.FlexColumnWidth(1),
-        4: const pw.FlexColumnWidth(2),
+        0: pw.FlexColumnWidth(3), // Serviço
+        1: pw.FlexColumnWidth(3), // Descrição
+        2: pw.FlexColumnWidth(1), // Qtd
+        3: pw.FlexColumnWidth(1.5), // Valor Unit.
+        4: pw.FlexColumnWidth(1.5), // Total
       },
       children: [
         // Header
@@ -207,14 +230,23 @@ class PdfService {
           children: [
             _buildTableCell('Serviço', isHeader: true),
             _buildTableCell('Descrição', isHeader: true),
-            _buildTableCell('Qtd', isHeader: true),
-            _buildTableCell('Valor Unit.', isHeader: true),
-            _buildTableCell('Total', isHeader: true),
+            _buildTableCell('Qtd', isHeader: true, align: pw.TextAlign.center),
+            _buildTableCell(
+              'Valor Unit.',
+              isHeader: true,
+              align: pw.TextAlign.right,
+            ),
+            _buildTableCell('Total', isHeader: true, align: pw.TextAlign.right),
           ],
         ),
         // Items
-        ...budget.items.map(
-          (item) => pw.TableRow(
+        ...List.generate(budget.items.length, (index) {
+          final item = budget.items[index];
+          final isEven = index % 2 == 0;
+          return pw.TableRow(
+            decoration: pw.BoxDecoration(
+              color: isEven ? PdfColors.white : PdfColors.grey100,
+            ),
             children: [
               _buildTableCell(item.serviceName),
               _buildTableCell(item.serviceDescription),
@@ -222,11 +254,17 @@ class PdfService {
                 item.quantity.toString(),
                 align: pw.TextAlign.center,
               ),
-              _buildTableCell(Formatters.formatCurrency(item.unitPrice)),
-              _buildTableCell(Formatters.formatCurrency(item.total)),
+              _buildTableCell(
+                Formatters.formatCurrency(item.unitPrice),
+                align: pw.TextAlign.right,
+              ),
+              _buildTableCell(
+                Formatters.formatCurrency(item.total),
+                align: pw.TextAlign.right,
+              ),
             ],
-          ),
-        ),
+          );
+        }),
       ],
     );
   }
@@ -237,11 +275,11 @@ class PdfService {
     pw.TextAlign align = pw.TextAlign.left,
   }) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.all(8),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       child: pw.Text(
         text,
         style: pw.TextStyle(
-          fontSize: 10,
+          fontSize: 9,
           fontWeight: isHeader ? pw.FontWeight.bold : pw.FontWeight.normal,
           color: isHeader ? PdfColors.white : PdfColors.black,
         ),
@@ -253,58 +291,134 @@ class PdfService {
   pw.Widget _buildTotalSection(BudgetModel budget) {
     return pw.Container(
       alignment: pw.Alignment.centerRight,
-      child: pw.Container(
-        padding: const pw.EdgeInsets.all(16),
-        decoration: pw.BoxDecoration(
-          color: PdfColors.blue700,
-          borderRadius: pw.BorderRadius.circular(8),
-        ),
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.end,
-          children: [
-            pw.Text(
-              'TOTAL',
-              style: pw.TextStyle(
-                fontSize: 14,
-                fontWeight: pw.FontWeight.bold,
-                color: PdfColors.white,
-              ),
+      child: pw.Row(
+        mainAxisSize: pw.MainAxisSize.min,
+        children: [
+          pw.Text(
+            'TOTAL A PAGAR:',
+            style: pw.TextStyle(
+              fontSize: 14,
+              fontWeight: pw.FontWeight.bold,
+              color: PdfColors.grey700,
             ),
-            pw.SizedBox(height: 4),
-            pw.Text(
+          ),
+          pw.SizedBox(width: 16),
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.blue700,
+              borderRadius: pw.BorderRadius.circular(4),
+            ),
+            child: pw.Text(
               Formatters.formatCurrency(budget.total),
               style: pw.TextStyle(
-                fontSize: 20,
+                fontSize: 16,
                 fontWeight: pw.FontWeight.bold,
                 color: PdfColors.white,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
+  }
+
+  pw.Widget _buildPaymentSection(UserModel user, BudgetModel budget) {
+    // Generate Pix Payload
+    final pixPayload = PixPayload(
+      key: user.pixKey!,
+      name: user.name,
+      city: 'BRASIL', // Using generic city as discussed
+      // amount: budget.total, // Optional: if uncommented, QR code is specific to this amount
+    ).generatePayload();
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(12),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey300),
+        borderRadius: pw.BorderRadius.circular(4),
+      ),
+      child: pw.Row(
+        children: [
+          pw.BarcodeWidget(
+            data: pixPayload,
+            barcode: pw.Barcode.qrCode(),
+            width: 80,
+            height: 80,
+          ),
+          pw.SizedBox(width: 16),
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(
+                  'PAGAMENTO VIA PIX',
+                  style: pw.TextStyle(
+                    fontSize: 12,
+                    fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.blue700,
+                  ),
+                ),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  'Escaneie o QR Code ao lado ou utilize a chave abaixo para realizar o pagamento.',
+                  style: const pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+                pw.SizedBox(height: 8),
+                pw.Text(
+                  'Chave Pix:',
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.Text(
+                  user.pixKey!,
+                  style: pw.TextStyle(
+                    fontSize: 12,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildTermsSection() {
+    return pw.Text(
+      'Orçamento válido por 15 dias após a data de emissão. Pagamento de 50% na aprovação e 50% na conclusão do serviço.',
+      style: pw.TextStyle(
+        fontSize: 10,
+        color: PdfColors.grey600,
+        fontStyle: pw.FontStyle.italic,
+      ),
+      textAlign: pw.TextAlign.center,
     );
   }
 
   pw.Widget _buildFooter() {
     return pw.Column(
       children: [
-        pw.Divider(thickness: 1),
-        pw.SizedBox(height: 16),
+        pw.Divider(thickness: 1, color: PdfColors.grey300),
+        pw.SizedBox(height: 32),
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.center,
           children: [
-            pw.Container(
-              width: 200,
-              child: pw.Column(
-                children: [
-                  pw.Divider(thickness: 1),
-                  pw.SizedBox(height: 4),
-                  pw.Text(
-                    'Assinatura do Cliente',
-                    style: const pw.TextStyle(fontSize: 10),
-                  ),
-                ],
-              ),
+            pw.Column(
+              children: [
+                pw.Container(width: 200, height: 1, color: PdfColors.black),
+                pw.SizedBox(height: 4),
+                pw.Text(
+                  'Assinatura do Cliente',
+                  style: const pw.TextStyle(fontSize: 10),
+                ),
+              ],
             ),
           ],
         ),
@@ -314,20 +428,20 @@ class PdfService {
 
   pw.Widget _buildWatermark() {
     return pw.Positioned(
-      bottom: 50,
+      bottom: 200,
       left: 0,
       right: 0,
       child: pw.Center(
         child: pw.Transform.rotate(
           angle: -0.5,
           child: pw.Opacity(
-            opacity: 0.2,
+            opacity: 0.1,
             child: pw.Text(
               AppConstants.freeWatermarkText,
               style: pw.TextStyle(
-                fontSize: 24,
+                fontSize: 60,
                 fontWeight: pw.FontWeight.bold,
-                color: PdfColors.grey600,
+                color: PdfColors.grey500,
               ),
             ),
           ),

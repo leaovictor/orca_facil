@@ -9,6 +9,7 @@ import '../screens/settings/settings_screen.dart';
 import '../screens/budget/new_budget_screen.dart';
 import '../screens/services/services_screen.dart';
 import '../screens/services/service_form_screen.dart';
+import '../screens/budget/budgets_screen.dart';
 import '../viewmodels/auth_viewmodel.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -63,10 +64,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/budgets',
-        builder: (context, state) => Scaffold(
-          appBar: AppBar(title: const Text('Orçamentos')),
-          body: const Center(child: Text('Budget history coming soon')),
-        ),
+        builder: (context, state) => const BudgetsScreen(),
       ),
       GoRoute(
         path: '/services',

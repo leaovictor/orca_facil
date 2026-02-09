@@ -1,53 +1,47 @@
 /**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
+ * Stripe Integration for Orça+
+ * Handles subscriptions, webhooks, and customer portal
  */
 
 import {setGlobalOptions} from "firebase-functions";
-// Uncomment these imports when you add cloud functions:
-// import {onRequest} from "firebase-functions/https";
-// import * as logger from "firebase-functions/logger";
-
-// Start writing functions
-// https://firebase.google.com/docs/functions/typescript
-
-// For cost control, you can set the maximum number of containers that can be
-// running at the same time. This helps mitigate the impact of unexpected
-// traffic spikes by instead downgrading performance. This limit is a
-// per-function limit. You can override the limit for each function using the
-// `maxInstances` option in the function's options, e.g.
-// `onRequest({ maxInstances: 5 }, (req, res) => { ... })`.
-// NOTE: setGlobalOptions does not apply to functions using the v1 API. V1
-// functions should each use functions.runWith({ maxInstances: 10 }) instead.
-// In the v1 API, each function can only serve one request per container, so
-// this will be the maximum concurrent request count.
-setGlobalOptions({maxInstances: 10});
-
-import {onRequest} from "firebase-functions/v2/https";
+import {onRequest, onCall} from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";
 import Stripe from "stripe";
 
 admin.initializeApp();
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+setGlobalOptions({maxInstances: 10});
+
+// Initialize Stripe
+const stripeKey = process.env.STRIPE_SECRET_KEY || "sk_test_placeholder";
+const stripe = new Stripe(stripeKey, {
   apiVersion: "2025-02-24.acacia",
 });
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
 
+// Price ID to Tier Mapping
+// TODO: Update these with actual Price IDs from Stripe Dashboard
+const PRICE_TO_TIER: { [key: string]: string } = {
+  "price_pro": "pro", // Replace with actual Pro price ID
+  "price_premium": "premium", // Replace with actual Premium price ID
+};
+
+/**
+ * Stripe Webhook Handler
+ * Processes all subscription events
+ */
 export const stripeWebhook = onRequest(async (request, response) => {
   const sig = request.headers["stripe-signature"] as string;
 
-  let event;
+  let event: Stripe.Event;
 
   try {
     event = stripe.webhooks.constructEvent(
-      request.rawBody, sig, endpointSecret
+      request.rawBody,
+      sig,
+      endpointSecret
     );
   } catch (err: unknown) {
     const error = err as Error;
@@ -56,33 +50,220 @@ export const stripeWebhook = onRequest(async (request, response) => {
     return;
   }
 
-  // Handle the event
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
-    const userId = session.client_reference_id;
+  logger.info(`Webhook received: ${event.type}`);
 
-    if (userId) {
-      const subscriptionId = session.subscription as string;
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-
-      await admin.firestore().collection("subscriptions").doc(userId).set({
-        tier: "pro",
-        isActive: true,
-        expiryDate: admin.firestore.Timestamp.fromMillis(
-          subscription.current_period_end * 1000
-        ),
-        periodStart: admin.firestore.Timestamp.fromMillis(
-          subscription.current_period_start * 1000
-        ),
-        stripeSubscriptionId: subscriptionId,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      }, {merge: true});
-
-      logger.info(`Subscription activated for user: ${userId}`);
-    } else {
-      logger.error("No user ID found in checkout session");
+  try {
+    switch (event.type) {
+    case "checkout.session.completed": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      await handleCheckoutCompleted(session);
+      break;
     }
+
+    case "customer.subscription.updated":
+      await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
+      break;
+
+    case "customer.subscription.deleted":
+      await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+      break;
+
+    case "invoice.payment_succeeded":
+      await handlePaymentSucceeded(event.data.object as Stripe.Invoice);
+      break;
+
+    case "invoice.payment_failed":
+      await handlePaymentFailed(event.data.object as Stripe.Invoice);
+      break;
+
+    default:
+      logger.info(`Unhandled event type: ${event.type}`);
+    }
+
+    response.json({received: true});
+  } catch (error) {
+    logger.error("Error processing webhook:", error);
+    response.status(500).send("Internal server error");
+  }
+});
+
+/**
+ * Handle successful checkout
+ * @param {Stripe.Checkout.Session} session
+ */
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  const userId = session.client_reference_id;
+
+  if (!userId) {
+    logger.error("No user ID found in checkout session");
+    return;
   }
 
-  response.json({received: true});
+  const subscriptionId = session.subscription as string;
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const customerId = subscription.customer as string;
+
+  // Determine tier from price ID
+  const priceId = subscription.items.data[0].price.id;
+  const tier = PRICE_TO_TIER[priceId] || "pro";
+
+  await admin.firestore().collection("subscriptions").doc(userId).set({
+    tier: tier,
+    isActive: true,
+    expiryDate: admin.firestore.Timestamp.fromMillis(
+      subscription.current_period_end * 1000
+    ),
+    periodStart: admin.firestore.Timestamp.fromMillis(
+      subscription.current_period_start * 1000
+    ),
+    stripeSubscriptionId: subscriptionId,
+    stripeCustomerId: customerId,
+    stripePriceId: priceId,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, {merge: true});
+
+  logger.info(`Subscription activated: user=${userId}, tier=${tier}`);
+}
+
+/**
+ * Handle subscription updates (upgrade/downgrade)
+ * @param {Stripe.Subscription} subscription
+ */
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+  const customerId = subscription.customer as string;
+
+  // Find user by customer ID
+  const subscriptionsRef = admin.firestore().collection("subscriptions");
+  const snapshot = await subscriptionsRef
+    .where("stripeCustomerId", "==", customerId)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) {
+    logger.error(`No user found for customer: ${customerId}`);
+    return;
+  }
+
+  const userId = snapshot.docs[0].id;
+  const priceId = subscription.items.data[0].price.id;
+  const tier = PRICE_TO_TIER[priceId] || "pro";
+
+  await admin.firestore().collection("subscriptions").doc(userId).update({
+    tier: tier,
+    isActive: subscription.status === "active",
+    expiryDate: admin.firestore.Timestamp.fromMillis(
+      subscription.current_period_end * 1000
+    ),
+    periodStart: admin.firestore.Timestamp.fromMillis(
+      subscription.current_period_start * 1000
+    ),
+    stripePriceId: priceId,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  logger.info(`Subscription updated: user=${userId}, tier=${tier}, ` +
+    `status=${subscription.status}`);
+}
+
+/**
+ * Handle subscription cancellation
+ * @param {Stripe.Subscription} subscription
+ */
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  const customerId = subscription.customer as string;
+
+  const subscriptionsRef = admin.firestore().collection("subscriptions");
+  const snapshot = await subscriptionsRef
+    .where("stripeCustomerId", "==", customerId)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) {
+    logger.error(`No user found for customer: ${customerId}`);
+    return;
+  }
+
+  const userId = snapshot.docs[0].id;
+
+  await admin.firestore().collection("subscriptions").doc(userId).update({
+    tier: "free",
+    isActive: false,
+    expiryDate: admin.firestore.Timestamp.fromMillis(
+      subscription.current_period_end * 1000
+    ),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  logger.info(`Subscription cancelled: user=${userId}`);
+}
+
+/**
+ * Handle successful payment (renewal)
+ * @param {Stripe.Invoice} invoice
+ */
+async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
+  if (!invoice.subscription) return;
+
+  const subscription = await stripe.subscriptions.retrieve(
+    invoice.subscription as string
+  );
+
+  await handleSubscriptionUpdated(subscription);
+  logger.info(`Payment succeeded for subscription: ${subscription.id}`);
+}
+
+/**
+ * Handle failed payment
+ * @param {Stripe.Invoice} invoice
+ */
+async function handlePaymentFailed(invoice: Stripe.Invoice) {
+  const customerId = invoice.customer as string;
+
+  const subscriptionsRef = admin.firestore().collection("subscriptions");
+  const snapshot = await subscriptionsRef
+    .where("stripeCustomerId", "==", customerId)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) return;
+
+  const userId = snapshot.docs[0].id;
+
+  logger.warn(`Payment failed for user: ${userId}`);
+  // Stripe will retry payments automatically
+  // You can add notification logic here if needed
+}
+
+/**
+ * Create Stripe Customer Portal Session
+ * Allows users to manage their subscription
+ */
+export const createStripePortalSession = onCall(async (request) => {
+  const userId = request.auth?.uid;
+
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  // Get user's subscription
+  const subscriptionDoc = await admin.firestore()
+    .collection("subscriptions")
+    .doc(userId)
+    .get();
+
+  const subscriptionData = subscriptionDoc.data();
+
+  if (!subscriptionData?.stripeCustomerId) {
+    throw new Error("No active subscription found");
+  }
+
+  // Create portal session
+  const session = await stripe.billingPortal.sessions.create({
+    customer: subscriptionData.stripeCustomerId,
+    return_url: `${process.env.APP_URL || "https://orcafacil.app"}/settings/subscription`,
+  });
+
+  logger.info(`Portal session created for user: ${userId}`);
+
+  return {url: session.url};
 });

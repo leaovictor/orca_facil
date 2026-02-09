@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 import '../viewmodels/dashboard_viewmodel.dart';
 import '../../../models/subscription_model.dart';
 import '../../../viewmodels/subscription_viewmodel.dart';
@@ -154,8 +155,7 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: () {
-                // Navigate to subscription screen
-                // context.go('/subscription');
+                context.push('/subscription');
               },
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(

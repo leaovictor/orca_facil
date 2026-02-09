@@ -144,7 +144,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     text: 'Entrar com Google',
                     onPressed: _handleGoogleSignIn,
                     isOutlined: true,
-                    icon: Icons.g_mobiledata,
+                    icon: const Icon(Icons.g_mobiledata),
                   ),
                   const SizedBox(height: 24),
                   Row(

@@ -5,7 +5,7 @@ class CustomButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool isLoading;
   final bool isOutlined;
-  final IconData? icon;
+  final Widget? icon; // Changed to Widget to accept any icon widget
   final Color? backgroundColor;
   final Color? textColor;
 
@@ -55,7 +55,7 @@ class CustomButton extends StatelessWidget {
     if (icon != null) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [Icon(icon), const SizedBox(width: 8), Text(text)],
+        children: [icon!, const SizedBox(width: 8), Text(text)],
       );
     }
 

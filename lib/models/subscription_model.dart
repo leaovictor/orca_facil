@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../core/constants/app_constants.dart';
 
 enum SubscriptionTier { free, pro, premium }
 
@@ -21,7 +22,8 @@ class SubscriptionModel {
 
   // Check if user has reached free tier limit
   bool get hasReachedFreeLimit =>
-      tier == SubscriptionTier.free && budgetCount >= 3;
+      tier == SubscriptionTier.free &&
+      budgetCount >= AppConstants.freeBudgetLimit;
 
   // Check if user can create budgets
   bool get canCreateBudget {
@@ -29,7 +31,7 @@ class SubscriptionModel {
         isActive) {
       return true;
     }
-    return !hasReachedFreeLimit;
+    return budgetCount < AppConstants.freeBudgetLimit;
   }
 
   // Premium Features Access Control
@@ -77,9 +79,9 @@ class SubscriptionModel {
       case SubscriptionTier.free:
         return 'R\$ 0,00';
       case SubscriptionTier.pro:
-        return 'R\$ 19,90/mês';
+        return 'R\$ ${AppConstants.proMonthlyPrice.toStringAsFixed(2)}/mês';
       case SubscriptionTier.premium:
-        return 'R\$ 29,90/mês';
+        return 'R\$ ${AppConstants.premiumMonthlyPrice.toStringAsFixed(2)}/mês';
     }
   }
 

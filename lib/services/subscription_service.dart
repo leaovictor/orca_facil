@@ -12,8 +12,30 @@ class SubscriptionService {
 
       if (subscription == null) return false;
 
-      if (subscription.tier == SubscriptionTier.pro && subscription.isActive) {
+      // Both Pro and Premium are considered "active subscriptions"
+      if ((subscription.tier == SubscriptionTier.pro ||
+              subscription.tier == SubscriptionTier.premium) &&
+          subscription.isActive) {
         // Check if not expired
+        if (subscription.expiryDate == null) return true;
+        return !subscription.isExpired;
+      }
+
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Check if user has Premium (highest tier) access
+  Future<bool> hasPremiumAccess(String userId) async {
+    try {
+      final subscription = await _firestoreService.getSubscription(userId);
+
+      if (subscription == null) return false;
+
+      if (subscription.tier == SubscriptionTier.premium &&
+          subscription.isActive) {
         if (subscription.expiryDate == null) return true;
         return !subscription.isExpired;
       }
@@ -41,7 +63,9 @@ class SubscriptionService {
 
       if (subscription == null) return 0;
 
-      if (subscription.tier == SubscriptionTier.pro) {
+      // Pro and Premium have unlimited budgets
+      if (subscription.tier == SubscriptionTier.pro ||
+          subscription.tier == SubscriptionTier.premium) {
         return -1; // Unlimited
       }
 

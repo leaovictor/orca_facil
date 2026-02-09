@@ -57,10 +57,10 @@ dependencies:
   printing: ^5.11.1
   path_provider: ^2.1.1
   
-  # Subscription & Billing
-  in_app_purchase: ^3.1.13
-  in_app_purchase_android: ^0.3.4+1
-  in_app_purchase_storekit: ^0.3.6+7
+  # Subscription & Billing (Using Stripe Checkout via url_launcher)
+  # in_app_purchase: ^3.1.13
+  # in_app_purchase_android: ^0.3.4+1
+  # in_app_purchase_storekit: ^0.3.6+7
   
   # Utilities
   intl: ^0.20.2

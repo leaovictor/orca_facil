@@ -12,8 +12,10 @@ import '../../widgets/custom_button.dart';
 class SubscriptionScreen extends ConsumerWidget {
   const SubscriptionScreen({super.key});
 
-  Future<void> _launchStripeCheckout() async {
-    final Uri url = Uri.parse(AppConstants.stripeProMonthlyUrl);
+  Future<void> _launchStripeCheckout(String userId) async {
+    final Uri url = Uri.parse(
+      '${AppConstants.stripeProMonthlyUrl}?client_reference_id=$userId',
+    );
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       throw Exception('Could not launch $url');
     }
@@ -69,7 +71,7 @@ class SubscriptionScreen extends ConsumerWidget {
                 'Acesso a novos recursos',
               ],
               isCurrent: subscriptionAsync.value?.tier == SubscriptionTier.pro,
-              onPressed: _launchStripeCheckout,
+              onPressed: () => _launchStripeCheckout(user!.uid),
               isPro: true,
               isRecommended: true,
             ),

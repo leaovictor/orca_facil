@@ -23,7 +23,21 @@ class PdfService {
     // Ensure locale data is initialized
     await initializeDateFormatting('pt_BR', null);
 
-    final pdf = pw.Document();
+    // Initialize Fonts
+    pw.Font baseFont;
+    pw.Font boldFont;
+    try {
+      baseFont = await PdfGoogleFonts.notoSansRegular();
+      boldFont = await PdfGoogleFonts.notoSansBold();
+    } catch (e) {
+      // Fallback to standard fonts if internet fails
+      baseFont = pw.Font.helvetica();
+      boldFont = pw.Font.helveticaBold();
+    }
+
+    final pdf = pw.Document(
+      theme: pw.ThemeData.withFont(base: baseFont, bold: boldFont),
+    );
 
     // Load logo if available
     pw.MemoryImage? logoImage;
@@ -56,6 +70,7 @@ class PdfService {
             pw.SizedBox(height: 12),
 
             // Client Block (Unified)
+            // Using Wrap to ensure it stays together if possible, though Container usually handles this.
             _buildClientSection(budget),
             pw.SizedBox(height: 16),
 

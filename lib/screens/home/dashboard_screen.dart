@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../../widgets/dashboard_card.dart';
 import '../../widgets/subscription_badge.dart';
+import '../../widgets/constrained_layout.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/subscription_viewmodel.dart';
 import '../../core/theme/app_theme.dart';
@@ -18,6 +19,7 @@ class DashboardScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Orça+'),
+        centerTitle: false,
         actions: [
           userAsync.when(
             data: (user) {
@@ -47,67 +49,99 @@ class DashboardScreen extends ConsumerWidget {
             return const Center(child: Text('Usuário não encontrado'));
           }
 
-          return SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Olá, ${user.name.split(' ').first}! 👋',
-                    style: Theme.of(context).textTheme.displaySmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'O que deseja fazer hoje?',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 32),
-                  AnimationLimiter(
-                    child: GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                      children: AnimationConfiguration.toStaggeredList(
-                        duration: const Duration(milliseconds: 375),
-                        childAnimationBuilder: (widget) => SlideAnimation(
-                          verticalOffset: 50.0,
-                          child: FadeInAnimation(child: widget),
-                        ),
-                        children: [
-                          DashboardCard(
-                            title: 'Novo Orçamento',
-                            icon: Icons.add_circle_outline,
-                            color: AppTheme.primaryBlue,
-                            onTap: () => context.push('/budget/new'),
-                          ),
-                          DashboardCard(
-                            title: 'Orçamentos',
-                            icon: Icons.folder_outlined,
-                            color: AppTheme.secondaryGreen,
-                            onTap: () => context.push('/budgets'),
-                          ),
-                          DashboardCard(
-                            title: 'Serviços',
-                            icon: Icons.electric_bolt_outlined,
-                            color: AppTheme.warningColor,
-                            onTap: () => context.push('/services'),
-                          ),
-                          DashboardCard(
-                            title: 'Configurações',
-                            icon: Icons.settings_outlined,
-                            color: Colors.grey[700]!,
-                            onTap: () => context.push('/settings'),
-                          ),
-                        ],
+          return ConstrainedLayout(
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Olá, ${user.name.split(' ').first}! 👋',
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'O que deseja fazer hoje?',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 32),
+                    AnimationLimiter(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          // Responsive Grid Logic
+                          int crossAxisCount = 2;
+                          double width = constraints.maxWidth;
+
+                          if (width < 600) {
+                            crossAxisCount =
+                                2; // Mobile (can be 1 if too narrow, but 2 is standard)
+                          } else if (width < 1000) {
+                            crossAxisCount = 2; // Tablet
+                          } else {
+                            crossAxisCount = 4; // Desktop
+                          }
+
+                          // Adjust for very small screens
+                          if (width < 350) crossAxisCount = 1;
+
+                          return GridView.count(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisCount: crossAxisCount,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            childAspectRatio: crossAxisCount == 4
+                                ? 0.9
+                                : 1.0, // Tweak ratio for desktop
+                            children: AnimationConfiguration.toStaggeredList(
+                              duration: const Duration(milliseconds: 375),
+                              childAnimationBuilder: (widget) => SlideAnimation(
+                                verticalOffset: 50.0,
+                                child: FadeInAnimation(child: widget),
+                              ),
+                              children: [
+                                DashboardCard(
+                                  title: 'Novo Orçamento',
+                                  icon: Icons.add_circle_outline,
+                                  color: AppTheme.primaryBlue,
+                                  onTap: () => context.push('/budget/new'),
+                                ),
+                                DashboardCard(
+                                  title: 'Orçamentos',
+                                  icon: Icons.folder_outlined,
+                                  color: AppTheme.secondaryGreen,
+                                  onTap: () => context.go(
+                                    '/budgets',
+                                  ), // Use go for shell route
+                                ),
+                                DashboardCard(
+                                  title: 'Serviços',
+                                  icon: Icons.electric_bolt_outlined,
+                                  color: AppTheme.warningColor,
+                                  onTap: () => context.go(
+                                    '/services',
+                                  ), // Use go for shell route
+                                ),
+                                DashboardCard(
+                                  title: 'Configurações',
+                                  icon: Icons.settings_outlined,
+                                  color: Colors.grey[700]!,
+                                  onTap: () => context.go(
+                                    '/settings',
+                                  ), // Use go for shell route
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );

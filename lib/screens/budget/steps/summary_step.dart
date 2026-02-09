@@ -6,8 +6,8 @@ import '../../../viewmodels/budget_viewmodel.dart';
 import '../../../viewmodels/auth_viewmodel.dart';
 import '../../../viewmodels/subscription_viewmodel.dart';
 
-import '../../../core/utils/formatters.dart';
 import '../../../widgets/custom_button.dart';
+import 'summary_card.dart';
 
 class SummaryStep extends ConsumerStatefulWidget {
   const SummaryStep({super.key});
@@ -132,120 +132,15 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
           ),
           const SizedBox(height: 24),
 
-          // Client info card
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.person,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Cliente',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(),
-                  _buildInfoRow('Nome', client.name),
-                  if (client.phone.isNotEmpty)
-                    _buildInfoRow('Telefone', client.phone),
-                  if (client.address != null && client.address!.isNotEmpty)
-                    _buildInfoRow('Endereço', client.address!),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Services card
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.build,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Serviços',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Divider(),
-                  ...items.map(
-                    (item) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.serviceName,
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.titleMedium,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${item.quantity}x ${Formatters.formatCurrency(item.unitPrice)}',
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(color: Colors.grey[600]),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            Formatters.formatCurrency(item.total),
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const Divider(),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Total',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        Formatters.formatCurrency(total),
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+          // Reusable Summary Card
+          SummaryCard(
+            client: client,
+            items: items,
+            total: total,
+            onEditClient: () =>
+                ref.read(currentStepProvider.notifier).state = 0,
+            onEditServices: () =>
+                ref.read(currentStepProvider.notifier).state = 1,
           ),
           const SizedBox(height: 24),
 
@@ -265,33 +160,6 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                       ref.read(currentStepProvider.notifier).state = 1;
                     },
               child: const Text('Voltar'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              '$label:',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w600),
             ),
           ),
         ],

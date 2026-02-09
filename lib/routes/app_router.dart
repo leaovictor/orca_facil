@@ -11,6 +11,7 @@ import '../screens/services/services_screen.dart';
 import '../screens/services/service_form_screen.dart';
 import '../screens/budget/budgets_screen.dart';
 import '../viewmodels/auth_viewmodel.dart';
+import '../widgets/scaffold_with_navigation.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -49,26 +50,34 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
       ),
-      GoRoute(
-        path: '/dashboard',
-        builder: (context, state) => const DashboardScreen(),
+      // Shell Route for adaptive navigation
+      ShellRoute(
+        builder: (context, state, child) {
+          return ScaffoldWithNavigation(child: child);
+        },
+        routes: [
+          GoRoute(
+            path: '/dashboard',
+            builder: (context, state) => const DashboardScreen(),
+          ),
+          GoRoute(
+            path: '/budgets',
+            builder: (context, state) => const BudgetsScreen(),
+          ),
+          GoRoute(
+            path: '/services',
+            builder: (context, state) => const ServicesScreen(),
+          ),
+          GoRoute(
+            path: '/settings',
+            builder: (context, state) => const SettingsScreen(),
+          ),
+        ],
       ),
-      GoRoute(
-        path: '/settings',
-        builder: (context, state) => const SettingsScreen(),
-      ),
-      // Budget wizard
+      // Full screen routes (outside shell)
       GoRoute(
         path: '/budget/new',
         builder: (context, state) => const NewBudgetScreen(),
-      ),
-      GoRoute(
-        path: '/budgets',
-        builder: (context, state) => const BudgetsScreen(),
-      ),
-      GoRoute(
-        path: '/services',
-        builder: (context, state) => const ServicesScreen(),
       ),
       GoRoute(
         path: '/services/new',

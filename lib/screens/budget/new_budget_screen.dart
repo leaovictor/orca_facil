@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../providers/budget_wizard_providers.dart';
+import '../../../widgets/constrained_layout.dart';
 import 'steps/client_step.dart';
 import 'steps/service_step.dart';
 import 'steps/summary_step.dart';
+import 'steps/summary_card.dart';
 
 class NewBudgetScreen extends ConsumerWidget {
   const NewBudgetScreen({super.key});
@@ -24,68 +26,194 @@ class NewBudgetScreen extends ConsumerWidget {
           },
         ),
       ),
-      body: Column(
-        children: [
-          // Stepper indicator
-          _buildStepIndicator(context, currentStep),
+      body: ConstrainedLayout(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Desktop Split View (Width >= 900)
+            if (constraints.maxWidth >= 900) {
+              return _buildDesktopLayout(context, ref, currentStep, canProceed);
+            }
 
-          // Step content
-          Expanded(
-            child: IndexedStack(
-              index: currentStep,
-              children: const [ClientStep(), ServiceStep(), SummaryStep()],
-            ),
-          ),
+            // Mobile/Tablet Stepper View
+            return _buildMobileLayout(context, ref, currentStep, canProceed);
+          },
+        ),
+      ),
+    );
+  }
 
-          // Navigation buttons
-          if (currentStep < 2)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, -2),
+  Widget _buildDesktopLayout(
+    BuildContext context,
+    WidgetRef ref,
+    int currentStep,
+    bool canProceed,
+  ) {
+    // Watch data for real-time summary
+    final client = ref.watch(selectedClientProvider);
+    final items = ref.watch(selectedServicesProvider);
+    final total = ref.watch(budgetTotalProvider);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // LEFT COL: Form Steps (Flex 3)
+        Expanded(
+          flex: 3,
+          child: Column(
+            children: [
+              _buildStepIndicator(context, currentStep),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  child: IndexedStack(
+                    index: currentStep,
+                    children: const [
+                      ClientStep(),
+                      ServiceStep(),
+                      SummaryStep(), // Reuse SummaryStep logic for final confirmation
+                    ],
                   ),
-                ],
+                ),
               ),
-              child: SafeArea(
-                child: Row(
-                  children: [
-                    if (currentStep > 0)
-                      Expanded(
-                        child: OutlinedButton(
+              // Navigation Buttons (Only needed for Steps 0 and 1, Step 2 has its own buttons in SummaryStep)
+              if (currentStep < 2)
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: Colors.grey[200]!)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (currentStep > 0)
+                        TextButton(
                           onPressed: () {
                             ref.read(currentStepProvider.notifier).state--;
                           },
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.all(16),
-                          ),
                           child: const Text('Voltar'),
                         ),
-                      ),
-                    if (currentStep > 0) const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
+                      const SizedBox(width: 16),
+                      ElevatedButton(
                         onPressed: canProceed
                             ? () {
                                 ref.read(currentStepProvider.notifier).state++;
                               }
                             : null,
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 32,
+                            vertical: 16,
+                          ),
                         ),
                         child: Text(currentStep == 1 ? 'Revisar' : 'Próximo'),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+            ],
+          ),
+        ),
+        // RIGHT COL: Real-time Summary (Flex 2)
+        Container(width: 1, color: Colors.grey[200]),
+        Expanded(
+          flex: 2,
+          child: Container(
+            color: Colors.grey[50], // Slightly different background
+            padding: const EdgeInsets.all(24),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Pré-visualização',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SummaryCard(
+                    client: client,
+                    items: items,
+                    total: total,
+                    // No edit callbacks here as we are already editing on the left
+                  ),
+                ],
               ),
             ),
-        ],
-      ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileLayout(
+    BuildContext context,
+    WidgetRef ref,
+    int currentStep,
+    bool canProceed,
+  ) {
+    return Column(
+      children: [
+        // Stepper indicator
+        _buildStepIndicator(context, currentStep),
+
+        // Step content
+        Expanded(
+          child: IndexedStack(
+            index: currentStep,
+            children: const [ClientStep(), ServiceStep(), SummaryStep()],
+          ),
+        ),
+
+        // Navigation buttons
+        if (currentStep < 2)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: Row(
+                children: [
+                  if (currentStep > 0)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          ref.read(currentStepProvider.notifier).state--;
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.all(16),
+                        ),
+                        child: const Text('Voltar'),
+                      ),
+                    ),
+                  if (currentStep > 0) const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: canProceed
+                          ? () {
+                              ref.read(currentStepProvider.notifier).state++;
+                            }
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.all(16),
+                      ),
+                      child: Text(currentStep == 1 ? 'Revisar' : 'Próximo'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 

@@ -7,6 +7,7 @@ import '../../models/client_model.dart';
 import '../../models/budget_model.dart';
 import '../../viewmodels/client_viewmodel.dart';
 import '../../viewmodels/budget_viewmodel.dart';
+import '../../core/utils/formatters.dart';
 
 class ClientDetailsScreen extends ConsumerWidget {
   final String clientId;
@@ -89,30 +90,49 @@ class ClientDetailsScreen extends ConsumerWidget {
     ClientModel client,
     List<BudgetModel> budgets,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final textTheme = theme.textTheme;
+
     final totalSpent = budgets.fold<double>(0, (sum, b) => sum + b.total);
     final paidCount = budgets
         .where((b) => b.status == BudgetStatus.paid)
         .length;
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primary.withOpacity(0.1),
-                  child: Text(
-                    client.name.substring(0, 1).toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
+                Container(
+                  width: 65,
+                  height: 65,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      client.name.substring(0, 1).toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                      ),
                     ),
                   ),
                 ),
@@ -121,48 +141,119 @@ class ClientDetailsScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(client.phone, style: const TextStyle(fontSize: 16)),
-                      if (client.address != null && client.address!.isNotEmpty)
-                        Text(
-                          client.address!,
-                          style: TextStyle(color: Colors.grey[600]),
+                      Text(
+                        client.name,
+                        style: textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.phone_outlined,
+                            size: 14,
+                            color: theme.hintColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            client.phone,
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: theme.hintColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (client.address != null &&
+                          client.address!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.location_on_outlined,
+                              size: 14,
+                              color: theme.hintColor,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                client.address!,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: theme.hintColor,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
               ],
             ),
-            const Divider(height: 32),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Divider(height: 1),
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildStatItem(
+                  context,
                   'Total Acumulado',
                   NumberFormat.currency(
                     locale: 'pt_BR',
                     symbol: 'R\$',
                   ).format(totalSpent),
+                  colorScheme.primary,
                 ),
-                _buildStatItem('Orçamentos', budgets.length.toString()),
-                _buildStatItem('Pagos', paidCount.toString()),
+                _buildStatItem(
+                  context,
+                  'Orçamentos',
+                  budgets.length.toString(),
+                  colorScheme.secondary,
+                ),
+                _buildStatItem(
+                  context,
+                  'Pagos',
+                  paidCount.toString(),
+                  Colors.green,
+                ),
               ],
             ),
             const SizedBox(height: 24),
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: FilledButton.tonalIcon(
                     onPressed: () => _callClient(client.phone),
-                    icon: const Icon(Icons.phone),
+                    icon: const Icon(Icons.phone_outlined, size: 18),
                     label: const Text('Ligar'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colorScheme.secondaryContainer,
+                      foregroundColor: colorScheme.onSecondaryContainer,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: OutlinedButton.icon(
+                  child: FilledButton.tonalIcon(
                     onPressed: () => _whatsappClient(client.phone),
-                    icon: const Icon(Icons.chat),
+                    icon: const Icon(Icons.chat_outlined, size: 18),
                     label: const Text('WhatsApp'),
+                    style: FilledButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: const Color(
+                        0xFF25D366,
+                      ).withValues(alpha: 0.1),
+                      foregroundColor: const Color(0xFF25D366),
+                    ),
                   ),
                 ),
               ],
@@ -173,14 +264,36 @@ class ClientDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatItem(String label, String value) {
+  Widget _buildStatItem(
+    BuildContext context,
+    String label,
+    String value,
+    Color color,
+  ) {
     return Column(
       children: [
-        Text(
-          value,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
         ),
-        Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+        ),
       ],
     );
   }
@@ -205,63 +318,98 @@ class ClientDetailsScreen extends ConsumerWidget {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: budgets.length,
       itemBuilder: (context, index) {
         final budget = budgets[index];
-        return ListTile(
-          leading: _getStatusIcon(budget.status),
-          title: Text('Orçamento #${budget.budgetNumber}'),
-          subtitle: Text(
-            DateFormat('dd/MM/yyyy HH:mm').format(budget.createdAt),
+        final theme = Theme.of(context);
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: theme.cardColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.dividerColor.withValues(alpha: 0.1),
+            ),
           ),
-          trailing: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                NumberFormat.currency(
-                  locale: 'pt_BR',
-                  symbol: 'R\$',
-                ).format(budget.total),
-                style: const TextStyle(fontWeight: FontWeight.bold),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: _getStatusColor(budget.status).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
               ),
-              _getStatusBadge(budget.status),
-            ],
+              child: Icon(
+                _getStatusIconData(budget.status),
+                color: _getStatusColor(budget.status),
+                size: 20,
+              ),
+            ),
+            title: Text(
+              'Orçamento #${Formatters.formatBudgetNumber(budget.budgetNumber)}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              DateFormat('dd/MM/yyyy • HH:mm').format(budget.createdAt),
+              style: TextStyle(fontSize: 12, color: theme.hintColor),
+            ),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  NumberFormat.currency(
+                    locale: 'pt_BR',
+                    symbol: 'R\$',
+                  ).format(budget.total),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                _getStatusBadge(budget.status),
+              ],
+            ),
+            onTap: () => _showBudgetActions(context, budget, ref),
           ),
-          onTap: () => _showBudgetActions(context, budget, ref),
         );
       },
     );
   }
 
-  Widget _getStatusIcon(BudgetStatus status) {
-    IconData icon;
-    Color color;
-
+  IconData _getStatusIconData(BudgetStatus status) {
     switch (status) {
       case BudgetStatus.paid:
-        icon = Icons.check_circle;
-        color = Colors.green;
-        break;
+        return Icons.check_circle_outline;
       case BudgetStatus.pending:
-        icon = Icons.access_time;
-        color = Colors.orange;
-        break;
+        return Icons.access_time;
       case BudgetStatus.cancelled:
-        icon = Icons.cancel;
-        color = Colors.red;
-        break;
+        return Icons.cancel_outlined;
       case BudgetStatus.accepted:
-        icon = Icons.thumb_up;
-        color = Colors.blue;
-        break;
+        return Icons.thumb_up_outlined;
       case BudgetStatus.rejected:
-        icon = Icons.thumb_down;
-        color = Colors.grey;
-        break;
+        return Icons.thumb_down_outlined;
     }
+  }
 
-    return Icon(icon, color: color);
+  Color _getStatusColor(BudgetStatus status) {
+    switch (status) {
+      case BudgetStatus.paid:
+        return Colors.green;
+      case BudgetStatus.pending:
+        return Colors.orange;
+      case BudgetStatus.cancelled:
+        return Colors.red;
+      case BudgetStatus.accepted:
+        return Colors.blue;
+      case BudgetStatus.rejected:
+        return Colors.grey;
+    }
   }
 
   Widget _getStatusBadge(BudgetStatus status) {

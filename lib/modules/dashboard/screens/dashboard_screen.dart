@@ -311,8 +311,9 @@ class DashboardScreen extends ConsumerWidget {
                   sideTitles: SideTitles(
                     showTitles: true,
                     getTitlesWidget: (value, meta) {
-                      if (value.toInt() >= revenues.length)
+                      if (value.toInt() >= revenues.length) {
                         return const Text('');
+                      }
                       final month = revenues[value.toInt()].month;
                       return Text(
                         DateFormat('MMM', 'pt_BR').format(month),

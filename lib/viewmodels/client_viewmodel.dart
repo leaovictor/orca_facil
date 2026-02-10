@@ -56,6 +56,14 @@ class ClientViewModel extends StateNotifier<AsyncValue<void>> {
     state = const AsyncValue.loading();
 
     try {
+      // Verify subscription limits
+      final subscription = await _firestoreService.getSubscription(userId);
+      if (subscription != null && !subscription.canSaveClients) {
+        throw Exception(
+          'Salvar clientes é um recurso exclusivo dos planos Pro e Premium.\nFaça um upgrade para gerenciar seus clientes.',
+        );
+      }
+
       final client = ClientModel(
         id: '', // Will be set by Firestore
         userId: userId,

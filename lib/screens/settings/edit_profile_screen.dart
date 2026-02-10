@@ -131,11 +131,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           radius: 60,
                           backgroundColor: Colors.grey[200],
                           backgroundImage: user.photoUrl != null
-                              ? NetworkImage(
-                                  user.photoUrl!,
-                                  webHtmlElementStrategy:
-                                      WebHtmlElementStrategy.prefer,
-                                )
+                              ? NetworkImage(user.photoUrl!)
                               : null,
                           child: user.photoUrl == null
                               ? Text(

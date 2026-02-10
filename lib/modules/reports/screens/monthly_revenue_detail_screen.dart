@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
-import 'package:printing/printing.dart';
 import '../models/report_models.dart';
 import '../services/excel_export_service.dart';
 import '../../../core/utils/formatters.dart';
@@ -29,11 +31,15 @@ class _MonthlyRevenueDetailScreenState
         widget.report,
       );
 
-      await Printing.sharePdf(
-        bytes: bytes,
-        filename:
-            'faturamento_${DateFormat('yyyy_MM').format(widget.report.month)}.xlsx',
-      );
+      final directory = await getTemporaryDirectory();
+      final fileName =
+          'faturamento_${DateFormat('yyyy_MM').format(widget.report.month)}.xlsx';
+      final file = File('${directory.path}/$fileName');
+      await file.writeAsBytes(bytes);
+
+      await Share.shareXFiles([
+        XFile(file.path),
+      ], text: 'Relatório de Faturamento Mensal');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

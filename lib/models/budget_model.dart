@@ -85,6 +85,7 @@ class BudgetModel {
   final String clientName;
   final String clientPhone;
   final String? clientAddress;
+  final String? clientNotes;
   final List<BudgetItem> items;
   final double total;
   final DateTime createdAt;
@@ -101,6 +102,7 @@ class BudgetModel {
     required this.clientName,
     required this.clientPhone,
     this.clientAddress,
+    this.clientNotes,
     required this.items,
     required this.total,
     required this.createdAt,
@@ -120,6 +122,7 @@ class BudgetModel {
       'clientName': clientName,
       'clientPhone': clientPhone,
       'clientAddress': clientAddress,
+      'clientNotes': clientNotes,
       'items': items.map((item) => item.toMap()).toList(),
       'total': total,
       'createdAt': Timestamp.fromDate(createdAt),
@@ -140,6 +143,7 @@ class BudgetModel {
       clientName: map['clientName'] ?? '',
       clientPhone: map['clientPhone'] ?? '',
       clientAddress: map['clientAddress'],
+      clientNotes: map['clientNotes'],
       items:
           (map['items'] as List<dynamic>?)
               ?.map((item) => BudgetItem.fromMap(item as Map<String, dynamic>))
@@ -176,6 +180,7 @@ class BudgetModel {
     String? clientName,
     String? clientPhone,
     String? clientAddress,
+    String? clientNotes,
     List<BudgetItem>? items,
     double? total,
     DateTime? createdAt,
@@ -192,6 +197,7 @@ class BudgetModel {
       clientName: clientName ?? this.clientName,
       clientPhone: clientPhone ?? this.clientPhone,
       clientAddress: clientAddress ?? this.clientAddress,
+      clientNotes: clientNotes ?? this.clientNotes,
       items: items ?? this.items,
       total: total ?? this.total,
       createdAt: createdAt ?? this.createdAt,

@@ -77,11 +77,9 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
           ),
         );
 
-        context.go('/budgets'); // Voltar para a lista
-        context.push(
-          '/budget/preview',
-          extra: createdBudget,
-        ); // Abrir o preview em cima
+        // Replace the wizard with the preview screen
+        // This ensures the back button goes to the previous screen (likely the budget list)
+        context.pushReplacement('/budget/preview', extra: createdBudget);
       }
     } catch (e) {
       setState(() => _isCreating = false);

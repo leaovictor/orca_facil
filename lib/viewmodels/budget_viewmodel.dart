@@ -50,6 +50,14 @@ class BudgetViewModel extends StateNotifier<AsyncValue<BudgetModel?>> {
       // Calculate total
       final total = items.fold<double>(0, (sum, item) => sum + item.total);
 
+      // Verify subscription limits
+      final subscription = await _firestoreService.getSubscription(userId);
+      if (subscription != null && !subscription.canCreateBudget) {
+        throw Exception(
+          'Limite de orçamentos atingido no plano Gratuito.\nFaça um upgrade para criar orçamentos ilimitados.',
+        );
+      }
+
       // Get next budget number
       final budgetNumber = await _firestoreService.getNextBudgetNumber(userId);
 
@@ -62,6 +70,7 @@ class BudgetViewModel extends StateNotifier<AsyncValue<BudgetModel?>> {
         clientName: client.name,
         clientPhone: client.phone,
         clientAddress: client.address,
+        clientNotes: client.notes,
         items: items,
         total: total,
         createdAt: DateTime.now(),

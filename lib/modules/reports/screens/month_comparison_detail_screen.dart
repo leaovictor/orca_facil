@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
-import 'package:printing/printing.dart';
 import '../models/report_models.dart';
 import '../services/excel_export_service.dart';
 import '../../../core/utils/formatters.dart';
@@ -28,11 +30,15 @@ class _MonthComparisonDetailScreenState
         widget.report,
       );
 
-      await Printing.sharePdf(
-        bytes: bytes,
-        filename:
-            'comparacao_${DateFormat('yyyy_MM').format(widget.report.month1)}_vs_${DateFormat('yyyy_MM').format(widget.report.month2)}.xlsx',
-      );
+      final directory = await getTemporaryDirectory();
+      final fileName =
+          'comparacao_${DateFormat('yyyy_MM').format(widget.report.month1)}_vs_${DateFormat('yyyy_MM').format(widget.report.month2)}.xlsx';
+      final file = File('${directory.path}/$fileName');
+      await file.writeAsBytes(bytes);
+
+      await Share.shareXFiles([
+        XFile(file.path),
+      ], text: 'Relatório de Comparação Mensal');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

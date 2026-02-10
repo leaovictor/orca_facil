@@ -88,10 +88,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ListTile(
                         leading: user.photoUrl != null
                             ? CircleAvatar(
-                                backgroundImage: NetworkImage(
-                                  user.photoUrl!,
-                                  webHtmlElementStrategy:
-                                      WebHtmlElementStrategy.prefer,
+                                radius: 24,
+                                backgroundColor: Colors.grey[200],
+                                child: ClipOval(
+                                  child: Image.network(
+                                    user.photoUrl!,
+                                    width: 48,
+                                    height: 48,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Center(
+                                        child: Text(
+                                          user.name.isNotEmpty
+                                              ? user.name[0].toUpperCase()
+                                              : '?',
+                                          style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.grey[800],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                          if (loadingProgress == null)
+                                            return child;
+                                          return const Center(
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          );
+                                        },
+                                  ),
                                 ),
                               )
                             : const Icon(Icons.person),

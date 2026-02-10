@@ -127,26 +127,62 @@ class _ClientFormScreenState extends ConsumerState<ClientFormScreen> {
 
     if (user == null) return;
 
-    if (widget.clientId != null) {
-      await viewModel.updateClient(
-        clientId: widget.clientId!,
-        name: name,
-        phone: phone,
-        address: address.isEmpty ? null : address,
-        notes: notes.isEmpty ? null : notes,
-      );
-    } else {
-      await viewModel.createClient(
-        userId: user.uid,
-        name: name,
-        phone: phone,
-        address: address.isEmpty ? null : address,
-        notes: notes.isEmpty ? null : notes,
-      );
-    }
+    String? result;
 
-    if (mounted) {
-      context.pop();
+    try {
+      if (widget.clientId != null) {
+        await viewModel.updateClient(
+          clientId: widget.clientId!,
+          name: name,
+          phone: phone,
+          address: address.isEmpty ? null : address,
+          notes: notes.isEmpty ? null : notes,
+        );
+        result = 'updated';
+      } else {
+        result = await viewModel.createClient(
+          userId: user.uid,
+          name: name,
+          phone: phone,
+          address: address.isEmpty ? null : address,
+          notes: notes.isEmpty ? null : notes,
+        );
+      }
+
+      // Check if save was successful
+      if (result != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              widget.clientId != null
+                  ? 'Cliente atualizado com sucesso!'
+                  : 'Cliente cadastrado com sucesso!',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+        context.pop();
+      } else if (mounted) {
+        // Handle error from ViewModel
+        final error = ref.read(clientViewModelProvider).error;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error?.toString() ?? 'Erro ao salvar cliente'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/firestore_service.dart';
 import '../services/pdf_service.dart';
 import '../services/whatsapp_service.dart';
+import '../services/notification_service.dart';
 import '../models/budget_model.dart';
 import '../models/client_model.dart';
 import '../models/user_model.dart';
@@ -29,9 +30,13 @@ final budgetsProvider = StreamProvider.family<List<BudgetModel>, String>((
 class BudgetViewModel extends StateNotifier<AsyncValue<BudgetModel?>> {
   final FirestoreService _firestoreService;
   final PdfService _pdfService;
+  final NotificationService _notificationService;
 
-  BudgetViewModel(this._firestoreService, this._pdfService)
-    : super(const AsyncValue.data(null));
+  BudgetViewModel(
+    this._firestoreService,
+    this._pdfService,
+    this._notificationService,
+  ) : super(const AsyncValue.data(null));
 
   // Create new budget
   Future<String?> createBudget({
@@ -158,6 +163,28 @@ class BudgetViewModel extends StateNotifier<AsyncValue<BudgetModel?>> {
       return false;
     }
   }
+
+  // Update budget status
+  Future<void> updateBudgetStatus(
+    String budgetId,
+    BudgetStatus status, {
+    BudgetModel? budget,
+  }) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      await _firestoreService.updateBudgetStatus(budgetId, status);
+
+      // Notify if paid
+      if (status == BudgetStatus.paid && budget != null) {
+        await _notificationService.showPaymentNotification(
+          clientName: budget.clientName,
+          amount: budget.total,
+        );
+      }
+
+      return null;
+    });
+  }
 }
 
 // Budget ViewModel Provider
@@ -165,5 +192,7 @@ final budgetViewModelProvider =
     StateNotifierProvider<BudgetViewModel, AsyncValue<BudgetModel?>>((ref) {
       final firestoreService = ref.watch(firestoreServiceProvider);
       final pdfService = ref.watch(pdfServiceProvider);
-      return BudgetViewModel(firestoreService, pdfService);
+      final notificationService = ref.watch(notificationServiceProvider);
+
+      return BudgetViewModel(firestoreService, pdfService, notificationService);
     });

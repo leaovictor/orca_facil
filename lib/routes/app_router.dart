@@ -19,8 +19,12 @@ import '../screens/settings/subscription_screen.dart';
 import '../screens/budget/budgets_screen.dart';
 import '../screens/budget/pdf_preview_screen.dart';
 import '../models/budget_model.dart';
+import '../models/client_model.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../widgets/scaffold_with_navigation.dart';
+import '../screens/clients/clients_screen.dart';
+import '../screens/clients/client_details_screen.dart';
+import '../screens/clients/client_form_screen.dart'; // To be created next
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
@@ -76,6 +80,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/services',
             builder: (context, state) => const ServicesScreen(),
+          ),
+          GoRoute(
+            path: '/clients',
+            builder: (context, state) => const ClientsScreen(),
           ),
           GoRoute(
             path: '/settings',
@@ -141,6 +149,26 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final budget = state.extra as BudgetModel;
           return PdfPreviewScreen(budget: budget);
+        },
+      ),
+      GoRoute(
+        path: '/clients/new',
+        builder: (context, state) => const ClientFormScreen(),
+      ),
+      GoRoute(
+        path: '/clients/edit/:id',
+        builder: (context, state) {
+          final clientId = state.pathParameters['id']!;
+          final client = state.extra as ClientModel?;
+          return ClientFormScreen(clientId: clientId, client: client);
+        },
+      ),
+      GoRoute(
+        path: '/clients/:id',
+        builder: (context, state) {
+          final clientId = state.pathParameters['id']!;
+          final client = state.extra as ClientModel?;
+          return ClientDetailsScreen(clientId: clientId, initialClient: client);
         },
       ),
     ],

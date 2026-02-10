@@ -86,6 +86,7 @@ dependencies:
   # Notifications for Recurring Budgets
   flutter_local_notifications: ^17.2.3
   timezone: ^0.9.4
+  pix_flutter: ^2.2.0
 
 dev_dependencies:
   flutter_test:

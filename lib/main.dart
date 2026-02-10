@@ -6,6 +6,7 @@ import 'core/theme/app_theme.dart';
 import 'viewmodels/theme_viewmodel.dart';
 import 'routes/app_router.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'services/notification_service.dart';
 
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -24,7 +25,13 @@ void main() async {
   // Initialize locales
   await initializeDateFormatting('pt_BR', null);
 
-  runApp(const ProviderScope(child: OrcaMaisApp()));
+  // Initialize Notifications
+  final container = ProviderContainer();
+  await container.read(notificationServiceProvider).init();
+
+  runApp(
+    UncontrolledProviderScope(container: container, child: const OrcaMaisApp()),
+  );
 }
 
 class OrcaMaisApp extends ConsumerWidget {

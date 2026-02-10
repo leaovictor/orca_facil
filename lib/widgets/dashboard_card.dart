@@ -28,24 +28,24 @@ class DashboardCard extends StatelessWidget {
         child: Stack(
           children: [
             Container(
-              height: 180, // Fixed height constraint
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(icon, size: 40, color: color),
+                    child: Icon(icon, size: 28, color: color),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   Text(
                     title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
+                      fontSize: 12,
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 2,

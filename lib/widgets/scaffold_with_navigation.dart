@@ -37,6 +37,11 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                   label: Text('Serviços'),
                 ),
                 NavigationRailDestination(
+                  icon: Icon(Icons.people_outlined),
+                  selectedIcon: Icon(Icons.people),
+                  label: Text('Clientes'),
+                ),
+                NavigationRailDestination(
                   icon: Icon(Icons.settings_outlined),
                   selectedIcon: Icon(Icons.settings),
                   label: Text('Configurações'),
@@ -69,6 +74,11 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                   label: 'Serviços',
                 ),
                 NavigationDestination(
+                  icon: Icon(Icons.people_outlined),
+                  selectedIcon: Icon(Icons.people),
+                  label: 'Clientes',
+                ),
+                NavigationDestination(
                   icon: Icon(Icons.settings_outlined),
                   selectedIcon: Icon(Icons.settings),
                   label: 'Config',
@@ -85,7 +95,8 @@ class ScaffoldWithNavigation extends ConsumerWidget {
     if (location.startsWith('/dashboard')) return 0;
     if (location.startsWith('/budgets')) return 1;
     if (location.startsWith('/services')) return 2;
-    if (location.startsWith('/settings')) return 3;
+    if (location.startsWith('/clients')) return 3;
+    if (location.startsWith('/settings')) return 4;
     return 0;
   }
 
@@ -101,6 +112,9 @@ class ScaffoldWithNavigation extends ConsumerWidget {
         context.go('/services');
         break;
       case 3:
+        context.go('/clients');
+        break;
+      case 4:
         context.go('/settings');
         break;
     }

@@ -54,6 +54,29 @@ class BudgetItem {
   }
 }
 
+enum BudgetStatus {
+  pending,
+  accepted,
+  rejected,
+  paid,
+  cancelled;
+
+  String get displayName {
+    switch (this) {
+      case BudgetStatus.pending:
+        return 'Pendente';
+      case BudgetStatus.accepted:
+        return 'Aprovado';
+      case BudgetStatus.rejected:
+        return 'Rejeitado';
+      case BudgetStatus.paid:
+        return 'Pago';
+      case BudgetStatus.cancelled:
+        return 'Cancelado';
+    }
+  }
+}
+
 class BudgetModel {
   final String id;
   final String userId;
@@ -68,6 +91,7 @@ class BudgetModel {
   final DateTime? updatedAt;
   final int validityDays;
   final int warrantyDays;
+  final BudgetStatus status;
 
   BudgetModel({
     required this.id,
@@ -83,6 +107,7 @@ class BudgetModel {
     this.updatedAt,
     this.validityDays = 7,
     this.warrantyDays = 90,
+    this.status = BudgetStatus.pending,
   });
 
   // Convert to Map for Firestore
@@ -101,6 +126,7 @@ class BudgetModel {
       'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
       'validityDays': validityDays,
       'warrantyDays': warrantyDays,
+      'status': status.name,
     };
   }
 
@@ -126,6 +152,10 @@ class BudgetModel {
           : null,
       validityDays: map['validityDays'] ?? 7,
       warrantyDays: map['warrantyDays'] ?? 90,
+      status: BudgetStatus.values.firstWhere(
+        (e) => e.name == map['status'],
+        orElse: () => BudgetStatus.pending,
+      ),
     );
   }
 
@@ -152,6 +182,7 @@ class BudgetModel {
     DateTime? updatedAt,
     int? validityDays,
     int? warrantyDays,
+    BudgetStatus? status,
   }) {
     return BudgetModel(
       id: id ?? this.id,
@@ -167,6 +198,7 @@ class BudgetModel {
       updatedAt: updatedAt ?? this.updatedAt,
       validityDays: validityDays ?? this.validityDays,
       warrantyDays: warrantyDays ?? this.warrantyDays,
+      status: status ?? this.status,
     );
   }
 }

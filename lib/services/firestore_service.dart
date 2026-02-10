@@ -352,4 +352,39 @@ class FirestoreService {
       throw Exception('Erro ao resetar contador de orçamentos: $e');
     }
   }
+
+  // =======================
+  // CLIENT HISTORY OPERATIONS
+  // =======================
+
+  Stream<List<BudgetModel>> getClientBudgetsStream(
+    String userId,
+    String clientId,
+  ) {
+    return _firestore
+        .collection(AppConstants.budgetsCollection)
+        .where('userId', isEqualTo: userId)
+        .where('clientId', isEqualTo: clientId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => BudgetModel.fromSnapshot(doc))
+              .toList(),
+        );
+  }
+
+  Future<void> updateBudgetStatus(String budgetId, BudgetStatus status) async {
+    try {
+      await _firestore
+          .collection(AppConstants.budgetsCollection)
+          .doc(budgetId)
+          .update({
+            'status': status.name,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+    } catch (e) {
+      throw Exception('Erro ao atualizar status do orçamento: $e');
+    }
+  }
 }

@@ -52,7 +52,9 @@ class DashboardScreen extends ConsumerWidget {
           return ConstrainedLayout(
             child: SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(
+                  MediaQuery.of(context).size.width < 400 ? 16 : 24,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -72,38 +74,22 @@ class DashboardScreen extends ConsumerWidget {
                     AnimationLimiter(
                       child: LayoutBuilder(
                         builder: (context, constraints) {
-                          // Responsive Grid Logic
-                          int crossAxisCount = 2;
-                          double width = constraints.maxWidth;
+                          // Optimized Responsive Grid Logic
+                          final width = constraints.maxWidth;
 
-                          if (width < 600) {
-                            crossAxisCount =
-                                2; // Mobile (can be 1 if too narrow, but 2 is standard)
-                          } else if (width < 1000) {
-                            crossAxisCount = 2; // Tablet
-                          } else {
-                            crossAxisCount = 4; // Desktop
-                          }
-
-                          // Adjust for very small screens
-                          if (width < 350) crossAxisCount = 1;
-
-                          return GridView.count(
+                          return GridView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
-                            crossAxisCount: crossAxisCount,
-                            mainAxisSpacing: 16,
-                            crossAxisSpacing: 16,
-                            childAspectRatio: crossAxisCount == 4
-                                ? 0.9
-                                : 1.0, // Tweak ratio for desktop
-                            children: AnimationConfiguration.toStaggeredList(
-                              duration: const Duration(milliseconds: 375),
-                              childAnimationBuilder: (widget) => SlideAnimation(
-                                verticalOffset: 50.0,
-                                child: FadeInAnimation(child: widget),
-                              ),
-                              children: [
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: width < 600 ? 2 : 4,
+                                  mainAxisSpacing: 12,
+                                  crossAxisSpacing: 12,
+                                  childAspectRatio: width < 360 ? 1.0 : 1.1,
+                                ),
+                            itemCount: 5,
+                            itemBuilder: (context, index) {
+                              final cards = [
                                 DashboardCard(
                                   title: 'Novo Orçamento',
                                   icon: Icons.add_circle_outline,
@@ -114,17 +100,13 @@ class DashboardScreen extends ConsumerWidget {
                                   title: 'Orçamentos',
                                   icon: Icons.folder_outlined,
                                   color: AppTheme.secondaryGreen,
-                                  onTap: () => context.go(
-                                    '/budgets',
-                                  ), // Use go for shell route
+                                  onTap: () => context.go('/budgets'),
                                 ),
                                 DashboardCard(
                                   title: 'Serviços',
                                   icon: Icons.electric_bolt_outlined,
                                   color: AppTheme.warningColor,
-                                  onTap: () => context.go(
-                                    '/services',
-                                  ), // Use go for shell route
+                                  onTap: () => context.go('/services'),
                                 ),
                                 // Reports card (Premium only)
                                 Consumer(
@@ -149,12 +131,20 @@ class DashboardScreen extends ConsumerWidget {
                                   title: 'Configurações',
                                   icon: Icons.settings_outlined,
                                   color: Colors.grey[700]!,
-                                  onTap: () => context.go(
-                                    '/settings',
-                                  ), // Use go for shell route
+                                  onTap: () => context.go('/settings'),
                                 ),
-                              ],
-                            ),
+                              ];
+
+                              return AnimationConfiguration.staggeredGrid(
+                                position: index,
+                                duration: const Duration(milliseconds: 375),
+                                columnCount: 2, // Approximate for animation
+                                child: SlideAnimation(
+                                  verticalOffset: 50.0,
+                                  child: FadeInAnimation(child: cards[index]),
+                                ),
+                              );
+                            },
                           );
                         },
                       ),

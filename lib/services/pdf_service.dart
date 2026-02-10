@@ -8,8 +8,7 @@ import '../models/budget_model.dart';
 import '../models/user_model.dart';
 import '../models/subscription_model.dart';
 import '../core/utils/formatters.dart';
-import '../core/utils/pix_utils.dart';
-
+import '../services/payment_service.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 class PdfService {
@@ -66,6 +65,17 @@ class PdfService {
           return [
             // 1. Header
             _buildHeader(logoImage ?? appLogo, user, budget, boldFont),
+
+            // Status Banner if Paid
+            if (budget.status == BudgetStatus.paid) ...[
+              pw.SizedBox(height: 10),
+              _buildStatusBanner(
+                'ORÇAMENTO PAGO',
+                PdfColors.green900,
+                PdfColors.green100,
+              ),
+            ],
+
             pw.SizedBox(height: 20),
 
             // 2. Client Info
@@ -77,7 +87,9 @@ class PdfService {
             pw.SizedBox(height: 24),
 
             // 4. Payment & QR (Optional)
-            if (user.pixKey != null && user.pixKey!.isNotEmpty) ...[
+            if (budget.status != BudgetStatus.paid &&
+                user.pixKey != null &&
+                user.pixKey!.isNotEmpty) ...[
               _buildPaymentSection(user, budget),
               pw.SizedBox(height: 24),
             ],
@@ -362,11 +374,11 @@ class PdfService {
   }
 
   pw.Widget _buildPaymentSection(UserModel user, BudgetModel budget) {
-    final pixPayload = PixPayload(
-      key: user.pixKey!,
-      name: user.name,
-      city: 'SAO PAULO', // Default
-    ).generatePayload();
+    final paymentService = PaymentService();
+    final pixPayload = paymentService.generatePixPayload(
+      user: user,
+      budget: budget,
+    );
 
     return pw.Container(
       padding: const pw.EdgeInsets.all(16),
@@ -376,12 +388,13 @@ class PdfService {
       ),
       child: pw.Row(
         children: [
-          pw.BarcodeWidget(
-            data: pixPayload,
-            barcode: pw.Barcode.qrCode(),
-            width: 80,
-            height: 80,
-          ),
+          if (pixPayload.isNotEmpty)
+            pw.BarcodeWidget(
+              data: pixPayload,
+              barcode: pw.Barcode.qrCode(),
+              width: 80,
+              height: 80,
+            ),
           pw.SizedBox(width: 20),
           pw.Expanded(
             child: pw.Column(
@@ -415,6 +428,30 @@ class PdfService {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  pw.Widget _buildStatusBanner(
+    String text,
+    PdfColor textColor,
+    PdfColor bgColor,
+  ) {
+    return pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.symmetric(vertical: 8),
+      decoration: pw.BoxDecoration(
+        color: bgColor,
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+      ),
+      child: pw.Text(
+        text,
+        textAlign: pw.TextAlign.center,
+        style: pw.TextStyle(
+          color: textColor,
+          fontWeight: pw.FontWeight.bold,
+          fontSize: 16,
+        ),
       ),
     );
   }

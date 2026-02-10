@@ -21,7 +21,11 @@ class PixPayload {
 
     // 26 - Merchant Account Information
     final merchantAccountInfo = StringBuffer();
-    _appendTLV(merchantAccountInfo, '00', 'br.gov.bcb.pix');
+    _appendTLV(
+      merchantAccountInfo,
+      '00',
+      'BR.GOV.BCB.PIX',
+    ); // Must be uppercase
     _appendTLV(merchantAccountInfo, '01', key);
     _appendTLV(buffer, '26', merchantAccountInfo.toString());
 
@@ -39,15 +43,15 @@ class PixPayload {
     // 58 - Country Code
     _appendTLV(buffer, '58', 'BR');
 
-    // 59 - Merchant Name
-    _appendTLV(buffer, '59', _truncate(name, 25));
+    // 59 - Merchant Name (normalized to remove special characters)
+    _appendTLV(buffer, '59', _normalizeText(_truncate(name, 25)));
 
-    // 60 - Merchant City
-    _appendTLV(buffer, '60', _truncate(city, 15));
+    // 60 - Merchant City (normalized to remove special characters)
+    _appendTLV(buffer, '60', _normalizeText(_truncate(city, 15)));
 
     // 62 - Additional Data Field Template
     final additionalData = StringBuffer();
-    _appendTLV(additionalData, '05', txId ?? '***');
+    _appendTLV(additionalData, '05', _normalizeText(txId ?? '***'));
     _appendTLV(buffer, '62', additionalData.toString());
 
     // 63 - CRC16
@@ -66,6 +70,25 @@ class PixPayload {
   String _truncate(String value, int length) {
     if (value.length <= length) return value;
     return value.substring(0, length);
+  }
+
+  /// Normalizes text to remove accents and special characters
+  /// PIX EMV standard requires only ASCII characters
+  String _normalizeText(String text) {
+    // Remove accents and convert to uppercase
+    const withAccents = 'ÀÁÂÃÄÅàáâãäåÈÉÊËèéêëÌÍÎÏìíîïÒÓÔÕÖòóôõöÙÚÛÜùúûüÇçÑñ';
+    const withoutAccents = 'AAAAAAaaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn';
+
+    String normalized = text.toUpperCase();
+
+    for (int i = 0; i < withAccents.length; i++) {
+      normalized = normalized.replaceAll(withAccents[i], withoutAccents[i]);
+    }
+
+    // Keep only alphanumeric and spaces
+    normalized = normalized.replaceAll(RegExp(r'[^A-Z0-9\s]'), '');
+
+    return normalized;
   }
 
   String _calculateCRC16(String payload) {

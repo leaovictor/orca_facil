@@ -17,19 +17,19 @@ class AppConstants {
 
   // Premium Subscription
   static const String premiumTierName = 'Premium';
-  static const double premiumMonthlyPrice = 39.90;
+  static const double premiumMonthlyPrice = 29.90;
   static const String premiumCurrency = 'BRL';
   static const String premiumProductId = 'orcamais_premium_monthly';
 
   // Stripe Configuration
   static const String stripePublishableKey =
-      'pk_test_51Syz9dInxIuKwyuipk7u2Igizr10uvL1THJ62PhN2uucCr8kF3F2fEZZrpele0ltGwKI3kl0HFO6KV1friTwLVwF00PIN94g6j'; // TODO: Update for production
+      'pk_test_51Syz9dInxIuKwyuipk7u2Igizr10uvL1THJ62PhN2uucCr8kF3F2fEZZrpele0ltGwKI3kl0HFO6KV1friTwLVwF00PIN94g6j'; // TODO: Update with your actual Stripe Publishable Key
 
   // Payment Links
   static const String stripeProMonthlyUrl =
       'https://buy.stripe.com/test_28E14nfXYgCFgrxdFn8og00'; // TODO: Update with actual Pro link
   static const String stripePremiumMonthlyUrl =
-      'https://buy.stripe.com/test_xxx'; // TODO: Update with actual Premium link
+      'https://buy.stripe.com/test_bJe3cv7rsfyB5MT0SB8og01'; // TODO: Update with actual Premium link
 
   // Price IDs (for webhook tier identification)
   // TODO: Update these after creating products in Stripe Dashboard
@@ -38,7 +38,7 @@ class AppConstants {
 
   // App URL for redirects
   static const String appUrl =
-      'https://orcafacil.app'; // TODO: Update with actual domain
+      'https://orcaplus-1309e.web.app'; // TODO: Update with actual domain
 
   // Firebase Collections
   static const String usersCollection = 'users';

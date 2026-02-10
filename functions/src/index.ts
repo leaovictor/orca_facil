@@ -11,7 +11,10 @@ import Stripe from "stripe";
 
 admin.initializeApp();
 
-setGlobalOptions({maxInstances: 10});
+setGlobalOptions({
+  maxInstances: 10,
+  secrets: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"],
+});
 
 // Initialize Stripe
 const stripeKey = process.env.STRIPE_SECRET_KEY || "sk_test_placeholder";
@@ -23,9 +26,13 @@ const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
 
 // Price ID to Tier Mapping
 // TODO: Update these with actual Price IDs from Stripe Dashboard
-const PRICE_TO_TIER: { [key: string]: string } = {
-  "price_pro": "pro", // Replace with actual Pro price ID
-  "price_premium": "premium", // Replace with actual Premium price ID
+const proProductId = process.env.STRIPE_PRODUCT_ID_PRO || "prod_pro";
+const premiumProductId =
+  process.env.STRIPE_PRODUCT_ID_PREMIUM || "prod_premium";
+
+const PRODUCT_TO_TIER: { [key: string]: string } = {
+  [proProductId]: "pro",
+  [premiumProductId]: "premium",
 };
 
 /**
@@ -103,9 +110,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   const customerId = subscription.customer as string;
 
-  // Determine tier from price ID
-  const priceId = subscription.items.data[0].price.id;
-  const tier = PRICE_TO_TIER[priceId] || "pro";
+  // Determine tier from product ID
+  const productId = subscription.items.data[0].price.product as string;
+  const tier = PRODUCT_TO_TIER[productId] || "pro";
 
   await admin.firestore().collection("subscriptions").doc(userId).set({
     tier: tier,
@@ -118,7 +125,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     ),
     stripeSubscriptionId: subscriptionId,
     stripeCustomerId: customerId,
-    stripePriceId: priceId,
+    stripeProductId: productId,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   }, {merge: true});
 
@@ -145,8 +152,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   }
 
   const userId = snapshot.docs[0].id;
-  const priceId = subscription.items.data[0].price.id;
-  const tier = PRICE_TO_TIER[priceId] || "pro";
+  const productId = subscription.items.data[0].price.product as string;
+  const tier = PRODUCT_TO_TIER[productId] || "pro";
 
   await admin.firestore().collection("subscriptions").doc(userId).update({
     tier: tier,
@@ -157,7 +164,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     periodStart: admin.firestore.Timestamp.fromMillis(
       subscription.current_period_start * 1000
     ),
-    stripePriceId: priceId,
+    stripeProductId: productId,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 

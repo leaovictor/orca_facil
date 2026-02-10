@@ -14,7 +14,7 @@ class SubscriptionBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isPro ? AppTheme.secondaryGreen : Colors.grey[300],
+        color: isPro ? AppTheme.secondaryOrange : Colors.grey[300],
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(

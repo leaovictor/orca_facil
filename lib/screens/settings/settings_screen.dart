@@ -88,7 +88,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       ListTile(
                         leading: user.photoUrl != null
                             ? CircleAvatar(
-                                backgroundImage: NetworkImage(user.photoUrl!),
+                                backgroundImage: NetworkImage(
+                                  user.photoUrl!,
+                                  webHtmlElementStrategy:
+                                      WebHtmlElementStrategy.prefer,
+                                ),
                               )
                             : const Icon(Icons.person),
                         title: const Text('Nome'),
@@ -134,7 +138,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                       ? Icons.star
                                       : Icons.star_border,
                                   color: subscription.tier.name == 'pro'
-                                      ? AppTheme.secondaryGreen
+                                      ? AppTheme.secondaryOrange
                                       : Colors.grey,
                                 ),
                                 title: Text(

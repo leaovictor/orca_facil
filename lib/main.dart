@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
@@ -20,6 +21,16 @@ void main() async {
     );
   } catch (e) {
     debugPrint('Firebase initialization error: $e');
+  }
+
+  // Enable Firestore persistence for web
+  try {
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    );
+  } catch (e) {
+    debugPrint('Error enabling Firestore persistence: $e');
   }
 
   // Initialize locales

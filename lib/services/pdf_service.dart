@@ -539,7 +539,7 @@ class PdfService {
                 ),
                 pw.SizedBox(height: 10),
                 pw.Text(
-                  'Orça Fácil',
+                  'Orça+',
                   style: pw.TextStyle(
                     fontSize: 30,
                     fontWeight: pw.FontWeight.bold,

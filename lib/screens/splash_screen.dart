@@ -82,7 +82,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF2563EB), Color(0xFF1E40AF)],
+            colors: [Color(0xFF0D47A1), Color(0xFF002171)],
           ),
         ),
         child: Center(
@@ -93,7 +93,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Image.asset('assets/logo/logo.png', width: 120, height: 120),
+                  Image.asset(
+                    'assets/logo/logo_premium.png',
+                    width: 150,
+                    height: 150,
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     'Orça+',

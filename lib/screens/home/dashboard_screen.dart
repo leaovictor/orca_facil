@@ -99,7 +99,7 @@ class DashboardScreen extends ConsumerWidget {
                                 DashboardCard(
                                   title: 'Orçamentos',
                                   icon: Icons.folder_outlined,
-                                  color: AppTheme.secondaryGreen,
+                                  color: AppTheme.secondaryOrange,
                                   onTap: () => context.go('/budgets'),
                                 ),
                                 DashboardCard(

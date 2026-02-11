@@ -70,6 +70,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '748613645567',
     projectId: 'orcaplus-1309e',
     storageBucket: 'orcaplus-1309e.firebasestorage.app',
+    iosClientId: '748613645567-aaqnk8k85vrv64n6cqelgcdlahh5sbni.apps.googleusercontent.com',
     iosBundleId: 'br.dev.victorleao.orcafacil',
   );
+
 }

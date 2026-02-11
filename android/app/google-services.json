@@ -12,7 +12,12 @@
           "package_name": "br.dev.victorleao.orcafacil"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "748613645567-hbldutufm7l9qghdq76kkfc3skqadv2f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyB48W3K0rQAAOWwOKkzYjbHY3Bau_gN0Z8"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "748613645567-hbldutufm7l9qghdq76kkfc3skqadv2f.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "748613645567-aaqnk8k85vrv64n6cqelgcdlahh5sbni.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "br.dev.victorleao.orcafacil"
+              }
+            }
+          ]
         }
       }
     }

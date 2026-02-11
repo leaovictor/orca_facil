@@ -6,7 +6,6 @@ import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/subscription_viewmodel.dart';
 import '../../viewmodels/budget_viewmodel.dart';
 import '../../widgets/premium_badges.dart';
-import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 
 /// Premium Dashboard Screen with Glassmorphism
@@ -86,7 +85,7 @@ class _PremiumDashboardScreenState extends ConsumerState<PremiumDashboardScreen>
                     children: [
                       // Header with Glassmorphism
                       _buildGlassHeader(user, subscriptionAsync),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 40),
 
                       // Hero CTA
                       _buildHeroCTA(context),
@@ -127,29 +126,33 @@ class _PremiumDashboardScreenState extends ConsumerState<PremiumDashboardScreen>
   }
 
   Widget _buildGlassHeader(user, subscriptionAsync) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withOpacity(0.2),
-                Colors.white.withOpacity(0.1),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 1.5,
-            ),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 28),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.white.withOpacity(0.15),
+            Colors.white.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
-          child: Row(
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: Column(
@@ -160,22 +163,24 @@ class _PremiumDashboardScreenState extends ConsumerState<PremiumDashboardScreen>
                         Text(
                           'Olá, ${user.name.split(' ').first}',
                           style: const TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 32,
+                            fontWeight: FontWeight.w700,
                             color: Colors.white,
+                            letterSpacing: -0.5,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        const Text('👋', style: TextStyle(fontSize: 28)),
+                        const SizedBox(width: 12),
+                        const Text('👋', style: TextStyle(fontSize: 32)),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Text(
-                      'Pronto para criar orçamentos incríveis?',
+                      'Bem-vindo de volta! Pronto para impressionar seus clientes?',
                       style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 15,
+                        color: Colors.white.withOpacity(0.85),
                         fontWeight: FontWeight.w400,
+                        height: 1.5,
                       ),
                     ),
                   ],
@@ -189,7 +194,7 @@ class _PremiumDashboardScreenState extends ConsumerState<PremiumDashboardScreen>
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -198,84 +203,104 @@ class _PremiumDashboardScreenState extends ConsumerState<PremiumDashboardScreen>
     return TweenAnimationBuilder<double>(
       duration: const Duration(milliseconds: 600),
       tween: Tween(begin: 0.0, end: 1.0),
-      curve: Curves.easeOutBack,
+      curve: Curves.easeOutCubic,
       builder: (context, value, child) {
-        return Transform.scale(scale: value, child: child);
+        return Transform.translate(
+          offset: Offset(0, 20 * (1 - value)),
+          child: Opacity(opacity: value, child: child),
+        );
       },
       child: InkWell(
         onTap: () => context.push('/budget/new'),
-        borderRadius: BorderRadius.circular(24),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.white.withOpacity(0.25),
-                    Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(28),
+        child: Container(
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withOpacity(0.2),
+                Colors.white.withOpacity(0.08),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withOpacity(0.4),
+                      Colors.white.withOpacity(0.2),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.2),
+                      blurRadius: 12,
+                      spreadRadius: 0,
+                    ),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.3),
-                  width: 1.5,
+                child: const Icon(
+                  Icons.add_rounded,
+                  size: 28,
+                  color: Colors.white,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
               ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      shape: BoxShape.circle,
+              const SizedBox(width: 24),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Novo Orçamento',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: -0.3,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.add_circle_outline_rounded,
-                      size: 32,
-                      color: Colors.white,
+                    SizedBox(height: 6),
+                    Text(
+                      'Crie um orçamento profissional em segundos',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 20),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Novo Orçamento',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Crie um orçamento profissional em segundos',
-                          style: TextStyle(fontSize: 14, color: Colors.white70),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    color: Colors.white.withOpacity(0.7),
-                    size: 20,
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.arrow_forward_rounded,
+                  color: Colors.white.withOpacity(0.9),
+                  size: 20,
+                ),
+              ),
+            ],
           ),
         ),
       ),

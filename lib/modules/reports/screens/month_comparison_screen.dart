@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../../../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/report_viewmodel.dart';
 import 'month_comparison_detail_screen.dart';
@@ -76,12 +75,19 @@ class _MonthComparisonScreenState extends ConsumerState<MonthComparisonScreen> {
 
     final reportAsync = ref.watch(monthComparisonReportProvider(params));
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Comparação entre Meses')),
-      body: reportAsync.when(
-        data: (report) => MonthComparisonDetailScreen(report: report),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
+    return reportAsync.when(
+      data: (report) => MonthComparisonDetailScreen(
+        report: report,
+        onSelectMonth1: _selectMonth1,
+        onSelectMonth2: _selectMonth2,
+        month1: _month1,
+        month2: _month2,
+      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, stack) => Scaffold(
+        appBar: AppBar(title: const Text('Comparação entre Meses')),
+        body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -99,46 +105,6 @@ class _MonthComparisonScreenState extends ConsumerState<MonthComparisonScreen> {
               ),
             ],
           ),
-        ),
-      ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          border: Border(top: BorderSide(color: Colors.grey[300]!)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _selectMonth1,
-                    icon: const Icon(Icons.calendar_month),
-                    label: Text(
-                      DateFormat('MMM/yyyy', 'pt_BR').format(_month1),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Icon(Icons.compare_arrows),
-                ),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _selectMonth2,
-                    icon: const Icon(Icons.calendar_month),
-                    label: Text(
-                      DateFormat('MMM/yyyy', 'pt_BR').format(_month2),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
         ),
       ),
     );

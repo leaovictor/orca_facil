@@ -3,11 +3,12 @@
  * Handles subscriptions, webhooks, and customer portal
  */
 
-import {setGlobalOptions} from "firebase-functions";
-import {onRequest, onCall} from "firebase-functions/v2/https";
+import { setGlobalOptions } from "firebase-functions";
+import { onRequest, onCall } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";
 import Stripe from "stripe";
+import * as express from "express";
 
 admin.initializeApp();
 
@@ -39,60 +40,66 @@ const PRODUCT_TO_TIER: { [key: string]: string } = {
  * Stripe Webhook Handler
  * Processes all subscription events
  */
-export const stripeWebhook = onRequest(async (request, response) => {
-  const sig = request.headers["stripe-signature"] as string;
+export const stripeWebhook = onRequest(
+  async (request: express.Request, response: express.Response) => {
+    const sig = request.headers["stripe-signature"] as string;
 
-  let event: Stripe.Event;
+    let event: Stripe.Event;
 
-  try {
-    event = stripe.webhooks.constructEvent(
-      request.rawBody,
-      sig,
-      endpointSecret
-    );
-  } catch (err: unknown) {
-    const error = err as Error;
-    logger.error(`Webhook Error: ${error.message}`);
-    response.status(400).send(`Webhook Error: ${error.message}`);
-    return;
-  }
-
-  logger.info(`Webhook received: ${event.type}`);
-
-  try {
-    switch (event.type) {
-    case "checkout.session.completed": {
-      const session = event.data.object as Stripe.Checkout.Session;
-      await handleCheckoutCompleted(session);
-      break;
+    try {
+      event = stripe.webhooks.constructEvent(
+        request.body,
+        sig,
+        endpointSecret
+      );
+    } catch (err: unknown) {
+      const error = err as Error;
+      logger.error(`Webhook Error: ${error.message}`);
+      response.status(400).send(`Webhook Error: ${error.message}`);
+      return;
     }
 
-    case "customer.subscription.updated":
-      await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
-      break;
+    logger.info(`Webhook received: ${event.type}`);
 
-    case "customer.subscription.deleted":
-      await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
-      break;
+    try {
+      switch (event.type) {
+        case "checkout.session.completed": {
+          const session =
+            event.data.object as Stripe.Checkout.Session;
+          await handleCheckoutCompleted(session);
+          break;
+        }
 
-    case "invoice.payment_succeeded":
-      await handlePaymentSucceeded(event.data.object as Stripe.Invoice);
-      break;
+        case "customer.subscription.updated":
+          await handleSubscriptionUpdated(
+            event.data.object as Stripe.Subscription);
+          break;
 
-    case "invoice.payment_failed":
-      await handlePaymentFailed(event.data.object as Stripe.Invoice);
-      break;
+        case "customer.subscription.deleted":
+          await handleSubscriptionDeleted(
+            event.data.object as Stripe.Subscription);
+          break;
 
-    default:
-      logger.info(`Unhandled event type: ${event.type}`);
+        case "invoice.payment_succeeded":
+          await handlePaymentSucceeded(
+            event.data.object as Stripe.Invoice);
+          break;
+
+        case "invoice.payment_failed":
+          await handlePaymentFailed(
+            event.data.object as Stripe.Invoice);
+          break;
+
+        default:
+          logger.info(`Unhandled event type: ${event.type}`);
+      }
+
+      response.json({ received: true });
+    } catch (error) {
+      logger.error("Error processing webhook:", error);
+      response.status(500).send("Internal server error");
     }
-
-    response.json({received: true});
-  } catch (error) {
-    logger.error("Error processing webhook:", error);
-    response.status(500).send("Internal server error");
-  }
-});
+  });
 
 /**
  * Handle successful checkout
@@ -127,7 +134,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     stripeCustomerId: customerId,
     stripeProductId: productId,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-  }, {merge: true});
+  }, { merge: true });
 
   logger.info(`Subscription activated: user=${userId}, tier=${tier}`);
 }
@@ -155,9 +162,16 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const productId = subscription.items.data[0].price.product as string;
   const tier = PRODUCT_TO_TIER[productId] || "pro";
 
+  // A subscription is considered active for these statuses:
+  // - active: subscription is paid and active
+  // - trialing: in trial period (still has access)
+  // - past_due: payment failed but still has grace period access
+  const validActiveStatuses = ["active", "trialing", "past_due"];
+  const isActive = validActiveStatuses.includes(subscription.status);
+
   await admin.firestore().collection("subscriptions").doc(userId).update({
     tier: tier,
-    isActive: subscription.status === "active",
+    isActive: isActive,
     expiryDate: admin.firestore.Timestamp.fromMillis(
       subscription.current_period_end * 1000
     ),
@@ -165,11 +179,12 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       subscription.current_period_start * 1000
     ),
     stripeProductId: productId,
+    stripeStatus: subscription.status,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   });
 
   logger.info(`Subscription updated: user=${userId}, tier=${tier}, ` +
-    `status=${subscription.status}`);
+    `status=${subscription.status}, isActive=${isActive}`);
 }
 
 /**
@@ -245,32 +260,34 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
  * Create Stripe Customer Portal Session
  * Allows users to manage their subscription
  */
-export const createStripePortalSession = onCall(async (request) => {
-  const userId = request.auth?.uid;
+export const createStripePortalSession = onCall(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async (request: any) => {
+    const userId = request.auth?.uid;
 
-  if (!userId) {
-    throw new Error("Unauthorized");
-  }
+    if (!userId) {
+      throw new Error("Unauthorized");
+    }
 
-  // Get user's subscription
-  const subscriptionDoc = await admin.firestore()
-    .collection("subscriptions")
-    .doc(userId)
-    .get();
+    // Get user's subscription
+    const subscriptionDoc = await admin.firestore()
+      .collection("subscriptions")
+      .doc(userId)
+      .get();
 
-  const subscriptionData = subscriptionDoc.data();
+    const subscriptionData = subscriptionDoc.data();
 
-  if (!subscriptionData?.stripeCustomerId) {
-    throw new Error("No active subscription found");
-  }
+    if (!subscriptionData?.stripeCustomerId) {
+      throw new Error("No active subscription found");
+    }
 
-  // Create portal session
-  const session = await stripe.billingPortal.sessions.create({
-    customer: subscriptionData.stripeCustomerId,
-    return_url: `${process.env.APP_URL || "https://orcafacil.app"}/settings/subscription`,
+    // Create portal session
+    const session = await stripe.billingPortal.sessions.create({
+      customer: subscriptionData.stripeCustomerId,
+      return_url: `${process.env.APP_URL || "https://orcafacil.app"}/settings/subscription`,
+    });
+
+    logger.info(`Portal session created for user: ${userId}`);
+
+    return { url: session.url };
   });
-
-  logger.info(`Portal session created for user: ${userId}`);
-
-  return {url: session.url};
-});

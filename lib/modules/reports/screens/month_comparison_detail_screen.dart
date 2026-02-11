@@ -10,8 +10,19 @@ import '../../../core/utils/formatters.dart';
 
 class MonthComparisonDetailScreen extends ConsumerStatefulWidget {
   final MonthComparisonReport report;
+  final VoidCallback onSelectMonth1;
+  final VoidCallback onSelectMonth2;
+  final DateTime month1;
+  final DateTime month2;
 
-  const MonthComparisonDetailScreen({super.key, required this.report});
+  const MonthComparisonDetailScreen({
+    super.key,
+    required this.report,
+    required this.onSelectMonth1,
+    required this.onSelectMonth2,
+    required this.month1,
+    required this.month2,
+  });
 
   @override
   ConsumerState<MonthComparisonDetailScreen> createState() =>
@@ -92,6 +103,41 @@ class _MonthComparisonDetailScreenState
           const SizedBox(height: 24),
           _buildGrowthIndicator(),
         ],
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          border: Border(top: BorderSide(color: Colors.grey[300]!)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: widget.onSelectMonth1,
+                icon: const Icon(Icons.calendar_month),
+                label: Text(
+                  DateFormat('MMM/yyyy', 'pt_BR').format(widget.month1),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Icon(Icons.compare_arrows),
+            ),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: widget.onSelectMonth2,
+                icon: const Icon(Icons.calendar_month),
+                label: Text(
+                  DateFormat('MMM/yyyy', 'pt_BR').format(widget.month2),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -14,14 +14,14 @@ class PrimaryActionButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.secondaryOrange.withValues(alpha: 0.3),
+            color: AppTheme.primaryBlue.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
         ],
       ),
       child: Material(
-        color: AppTheme.secondaryOrange,
+        color: AppTheme.primaryBlue,
         borderRadius: BorderRadius.circular(24),
         child: InkWell(
           onTap: onTap,

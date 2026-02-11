@@ -168,7 +168,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                       ? Icons.star
                                       : Icons.star_border,
                                   color: subscription.tier.name == 'pro'
-                                      ? AppTheme.secondaryOrange
+                                      ? AppTheme.primaryBlue
                                       : Colors.grey,
                                 ),
                                 title: Text(

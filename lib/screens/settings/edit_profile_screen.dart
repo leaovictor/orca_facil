@@ -55,7 +55,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Foto de perfil atualizada!'),
-            backgroundColor: AppTheme.successColor,
+            backgroundColor: AppTheme.successGreen,
           ),
         );
       }
@@ -87,7 +87,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Perfil atualizado com sucesso!'),
-            backgroundColor: AppTheme.successColor,
+            backgroundColor: AppTheme.successGreen,
           ),
         );
         context.pop();

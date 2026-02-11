@@ -31,7 +31,7 @@ class _ServiceStepState extends ConsumerState<ServiceStep> {
   ) {
     final selectedServices = ref.read(selectedServicesProvider);
 
-    // Add new service with default settings (item ID will be auto-generated)
+    // Add new service with default settings
     final newItem = BudgetItem(
       serviceId: serviceId,
       serviceName: serviceName,
@@ -51,7 +51,7 @@ class _ServiceStepState extends ConsumerState<ServiceStep> {
   }
 
   void _updateServiceItem(
-    String itemId,
+    int itemIndex,
     int quantity,
     String difficulty,
     String environment,
@@ -59,39 +59,44 @@ class _ServiceStepState extends ConsumerState<ServiceStep> {
     double unitPrice,
   ) {
     final selectedServices = ref.read(selectedServicesProvider);
-    final updated = selectedServices.map((item) {
-      if (item.itemId == itemId) {
-        return BudgetItem(
-          itemId: item.itemId,
-          serviceId: item.serviceId,
-          serviceName: item.serviceName,
-          serviceDescription: item.serviceDescription,
-          basePrice: item.basePrice,
-          unitPrice: unitPrice,
-          quantity: quantity,
-          difficulty: difficulty,
-          environment: environment,
-          distance: distance,
-        );
-      }
-      return item;
-    }).toList();
+    final updated = List<BudgetItem>.from(selectedServices);
+
+    if (itemIndex >= 0 && itemIndex < updated.length) {
+      final item = updated[itemIndex];
+      updated[itemIndex] = BudgetItem(
+        serviceId: item.serviceId,
+        serviceName: item.serviceName,
+        serviceDescription: item.serviceDescription,
+        basePrice: item.basePrice,
+        unitPrice: unitPrice,
+        quantity: quantity,
+        difficulty: difficulty,
+        environment: environment,
+        distance: distance,
+      );
+    }
 
     ref.read(selectedServicesProvider.notifier).state = updated;
   }
 
-  void _removeService(String itemId) {
+  void _removeService(int itemIndex) {
     final selectedServices = ref.read(selectedServicesProvider);
-    ref.read(selectedServicesProvider.notifier).state = selectedServices
-        .where((item) => item.itemId != itemId)
-        .toList();
+    final updated = List<BudgetItem>.from(selectedServices);
+    if (itemIndex >= 0 && itemIndex < updated.length) {
+      updated.removeAt(itemIndex);
+    }
+    ref.read(selectedServicesProvider.notifier).state = updated;
   }
 
-  List<BudgetItem> _getItemsForService(String serviceId) {
+  List<int> _getSelectedItemIndices(String serviceId) {
     final selectedServices = ref.watch(selectedServicesProvider);
-    return selectedServices
-        .where((item) => item.serviceId == serviceId)
-        .toList();
+    final List<int> indices = [];
+    for (int i = 0; i < selectedServices.length; i++) {
+      if (selectedServices[i].serviceId == serviceId) {
+        indices.add(i);
+      }
+    }
+    return indices;
   }
 
   @override
@@ -163,85 +168,34 @@ class _ServiceStepState extends ConsumerState<ServiceStep> {
                   }
 
                   return Column(
-                    children: filteredServices.expand((service) {
-                      final items = _getItemsForService(service.id);
-                      final List<Widget> widgets = [];
-
-                      if (items.isEmpty) {
-                        // Show single card with add button
-                        widgets.add(
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: ServiceCard(
-                              service: service,
-                              quantity: 0,
-                              difficulty: 'Fácil',
-                              environment: 'Sala',
-                              distance: 0,
-                              onAdd: () => _addService(
-                                service.id,
-                                service.name,
-                                service.description,
-                                service.unitPrice,
-                              ),
-                              onRemove: null,
-                              onChanged: null,
-                            ),
+                    children: filteredServices.map((service) {
+                      final selectedItem = _getSelectedItem(service.id);
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: ServiceCard(
+                          service: service,
+                          quantity: selectedItem?.quantity ?? 0,
+                          difficulty: selectedItem?.difficulty ?? 'Fácil',
+                          environment: selectedItem?.environment ?? 'Sala',
+                          distance: selectedItem?.distance ?? 0,
+                          onAdd: () => _addService(
+                            service.id,
+                            service.name,
+                            service.description,
+                            service.unitPrice,
                           ),
-                        );
-                      } else {
-                        // Show card for each item
-                        for (final item in items) {
-                          widgets.add(
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: ServiceCard(
-                                service: service,
-                                quantity: item.quantity,
-                                difficulty: item.difficulty ?? 'Fácil',
-                                environment: item.environment ?? 'Sala',
-                                distance: item.distance ?? 0,
-                                onAdd: null,
-                                onRemove: () => _removeService(item.itemId),
-                                onChanged: (qty, diff, env, dist, price) =>
-                                    _updateServiceItem(
-                                      item.itemId,
-                                      qty,
-                                      diff,
-                                      env,
-                                      dist,
-                                      price,
-                                    ),
-                              ),
-                            ),
-                          );
-                        }
-
-                        // Add "+ Add more" button
-                        widgets.add(
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: OutlinedButton.icon(
-                              onPressed: () => _addService(
+                          onRemove: () => _removeService(service.id),
+                          onChanged: (qty, diff, env, dist, price) =>
+                              _updateServiceItem(
                                 service.id,
-                                service.name,
-                                service.description,
-                                service.unitPrice,
+                                qty,
+                                diff,
+                                env,
+                                dist,
+                                price,
                               ),
-                              icon: const Icon(Icons.add, size: 18),
-                              label: Text('Adicionar mais: ${service.name}'),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }
-
-                      return widgets;
+                        ),
+                      );
                     }).toList(),
                   );
                 },

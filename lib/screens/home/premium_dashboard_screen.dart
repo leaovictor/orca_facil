@@ -1,356 +1,728 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/subscription_viewmodel.dart';
 import '../../viewmodels/budget_viewmodel.dart';
-import '../../widgets/premium_cards.dart';
 import '../../widgets/premium_badges.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/formatters.dart';
 
-/// Premium Dashboard Screen
-///
-/// Dashboard redesenhado seguindo o design system premium
-class PremiumDashboardScreen extends ConsumerWidget {
+/// Premium Dashboard Screen with Glassmorphism
+class PremiumDashboardScreen extends ConsumerStatefulWidget {
   const PremiumDashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PremiumDashboardScreen> createState() =>
+      _PremiumDashboardScreenState();
+}
+
+class _PremiumDashboardScreenState extends ConsumerState<PremiumDashboardScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
-      body: userAsync.when(
-        data: (user) {
-          if (user == null) {
-            return const Center(child: Text('Usuário não encontrado'));
-          }
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF1E40AF), // Deep blue
+              const Color(0xFF3B82F6), // Blue
+              const Color(0xFF8B5CF6), // Purple
+              const Color(0xFFEC4899), // Pink
+            ],
+            stops: const [0.0, 0.4, 0.7, 1.0],
+          ),
+        ),
+        child: userAsync.when(
+          data: (user) {
+            if (user == null) {
+              return const Center(
+                child: Text(
+                  'Usuário não encontrado',
+                  style: TextStyle(color: Colors.white),
+                ),
+              );
+            }
 
-          final subscriptionAsync = ref.watch(subscriptionProvider(user.uid));
-          final budgetsAsync = ref.watch(budgetsProvider(user.uid));
+            final subscriptionAsync = ref.watch(subscriptionProvider(user.uid));
+            final budgetsAsync = ref.watch(budgetsProvider(user.uid));
 
-          return SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(AppTheme.spaceMd + 4), // 20px
+            return SafeArea(
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header with Glassmorphism
+                      _buildGlassHeader(user, subscriptionAsync),
+                      const SizedBox(height: 32),
+
+                      // Hero CTA
+                      _buildHeroCTA(context),
+                      const SizedBox(height: 24),
+
+                      // Quick Access Grid
+                      _buildQuickAccessGrid(context),
+                      const SizedBox(height: 32),
+
+                      // Usage Indicator
+                      subscriptionAsync.when(
+                        data: (subscription) =>
+                            _buildUsageIndicator(subscription, context),
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, __) => const SizedBox.shrink(),
+                      ),
+
+                      // Recent Budgets
+                      _buildRecentBudgetsSection(budgetsAsync, context),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          ),
+          error: (error, _) => Center(
+            child: Text(
+              'Erro: $error',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlassHeader(user, subscriptionAsync) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white.withOpacity(0.2),
+                Colors.white.withOpacity(0.1),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+              width: 1.5,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header: Greeting + Badge
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Olá, ${user.name.split(' ').first}',
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: AppTheme.spaceXs),
-                            Text(
-                              'Vamos criar orçamentos profissionais!',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppTheme.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        subscriptionAsync.when(
-                          data: (subscription) => PlanBadge(
-                            isPro: subscription?.tier.name == 'pro',
+                        Text(
+                          'Olá, ${user.name.split(' ').first}',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
-                          loading: () => const SizedBox.shrink(),
-                          error: (err, stack) => const SizedBox.shrink(),
                         ),
+                        const SizedBox(width: 8),
+                        const Text('👋', style: TextStyle(fontSize: 28)),
                       ],
                     ),
-
-                    const SizedBox(height: AppTheme.spaceLg + 8), // 32px
-                    // Hero CTA: Criar Novo Orçamento
-                    CTACard(
-                      title: 'Criar novo orçamento',
-                      subtitle: 'Rápido, fácil, profissional',
-                      icon: Icons.add_circle_outline_rounded,
-                      onTap: () => context.push('/budget/new'),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Pronto para criar orçamentos incríveis?',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white.withOpacity(0.9),
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
+                  ],
+                ),
+              ),
+              subscriptionAsync.when(
+                data: (subscription) =>
+                    PlanBadge(isPro: subscription?.tier.name == 'pro'),
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-                    const SizedBox(height: AppTheme.spaceLg),
-
-                    // Quick Access Cards
-                    Row(
+  Widget _buildHeroCTA(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 600),
+      tween: Tween(begin: 0.0, end: 1.0),
+      curve: Curves.easeOutBack,
+      builder: (context, value, child) {
+        return Transform.scale(scale: value, child: child);
+      },
+      child: InkWell(
+        onTap: () => context.push('/budget/new'),
+        borderRadius: BorderRadius.circular(24),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.25),
+                    Colors.white.withOpacity(0.15),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.3),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.add_circle_outline_rounded,
+                      size: 32,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: StatsCard(
-                            title: 'Histórico',
-                            value: '',
-                            icon: Icons.history_rounded,
-                            iconColor: AppTheme.primaryBlue,
-                            onTap: () => context.go('/budgets'),
-                          ),
-                        ),
-                        const SizedBox(width: AppTheme.spaceMd),
-                        Expanded(
-                          child: StatsCard(
-                            title: 'Serviços',
-                            value: '',
-                            icon: Icons.build_rounded,
-                            iconColor: AppTheme.warningColor,
-                            onTap: () => context.go('/services'),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(width: AppTheme.spaceMd),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: StatsCard(
-                            title: 'Perfil',
-                            value: '',
-                            icon: Icons.person_rounded,
-                            iconColor: AppTheme.textSecondary,
-                            onTap: () => context.go('/settings'),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: AppTheme.spaceLg + 8), // 32px
-                    // Usage Indicator (for FREE users)
-                    subscriptionAsync.when(
-                      data: (subscription) {
-                        if (subscription == null) {
-                          return const SizedBox.shrink();
-                        }
-
-                        final isFree = subscription.tier.name == 'free';
-                        if (!isFree) return const SizedBox.shrink();
-
-                        final budgetCount = subscription.budgetCount;
-                        final limit = 5;
-                        final percentage = (budgetCount / limit).clamp(
-                          0.0,
-                          1.0,
-                        );
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  '$budgetCount/$limit orçamentos este mês',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppTheme.textSecondary,
-                                  ),
-                                ),
-                                if (budgetCount >= limit - 2)
-                                  TextButton(
-                                    onPressed: () =>
-                                        context.push('/subscription'),
-                                    child: const Text(
-                                      'Fazer upgrade',
-                                      style: TextStyle(fontSize: 14),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: AppTheme.spaceSm),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(2),
-                              child: LinearProgressIndicator(
-                                value: percentage,
-                                backgroundColor: AppTheme.slate200,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  budgetCount >= limit - 1
-                                      ? AppTheme.warningColor
-                                      : AppTheme.primaryBlue,
-                                ),
-                                minHeight: 4,
-                              ),
-                            ),
-                            const SizedBox(height: AppTheme.spaceLg),
-                          ],
-                        );
-                      },
-                      loading: () => const SizedBox.shrink(),
-                      error: (err, stack) => const SizedBox.shrink(),
-                    ),
-
-                    // Recent Budgets Section
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Orçamentos Recentes',
+                        Text(
+                          'Novo Orçamento',
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textPrimary,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
                         ),
-                        TextButton(
-                          onPressed: () => context.go('/budgets'),
-                          child: const Text('Ver todos'),
+                        SizedBox(height: 4),
+                        Text(
+                          'Crie um orçamento profissional em segundos',
+                          style: TextStyle(fontSize: 14, color: Colors.white70),
                         ),
                       ],
                     ),
-                    const SizedBox(height: AppTheme.spaceSm),
+                  ),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: Colors.white.withOpacity(0.7),
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-                    budgetsAsync.when(
-                      data: (budgets) {
-                        if (budgets.isEmpty) {
-                          return PremiumCard(
-                            child: Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(AppTheme.spaceLg),
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.description_outlined,
-                                      size: 64,
-                                      color: AppTheme.slate200,
-                                    ),
-                                    const SizedBox(height: AppTheme.spaceMd),
-                                    const Text(
-                                      'Nenhum orçamento ainda',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: AppTheme.textPrimary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppTheme.spaceXs),
-                                    Text(
-                                      'Crie seu primeiro orçamento profissional',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: AppTheme.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        }
+  Widget _buildQuickAccessGrid(BuildContext context) {
+    final items = [
+      _QuickAccessItem(
+        title: 'Clientes',
+        icon: Icons.people_outline_rounded,
+        gradient: const LinearGradient(
+          colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+        ),
+        onTap: () => context.go('/clients'),
+      ),
+      _QuickAccessItem(
+        title: 'Serviços',
+        icon: Icons.build_outlined,
+        gradient: const LinearGradient(
+          colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+        ),
+        onTap: () => context.go('/services'),
+      ),
+      _QuickAccessItem(
+        title: 'Histórico',
+        icon: Icons.history_rounded,
+        gradient: const LinearGradient(
+          colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
+        ),
+        onTap: () => context.go('/budgets'),
+      ),
+      _QuickAccessItem(
+        title: 'Perfil',
+        icon: Icons.person_outline_rounded,
+        gradient: const LinearGradient(
+          colors: [Color(0xFF10B981), Color(0xFF059669)],
+        ),
+        onTap: () => context.go('/settings'),
+      ),
+    ];
 
-                        final recentBudgets = budgets.take(3).toList();
-                        return Column(
-                          children: recentBudgets.map((budget) {
-                            return Padding(
-                              padding: const EdgeInsets.only(
-                                bottom: AppTheme.spaceSm + 4, // 12px
-                              ),
-                              child: PremiumCard(
-                                onTap: () => context.push(
-                                  '/budget/preview',
-                                  extra: budget,
-                                ),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(
-                                        AppTheme.spaceMd,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.primaryBlue.withValues(
-                                          alpha: 0.1,
-                                        ),
-                                        borderRadius: BorderRadius.circular(
-                                          AppTheme.radiusMd,
-                                        ),
-                                      ),
-                                      child: const Icon(
-                                        Icons.description_rounded,
-                                        color: AppTheme.primaryBlue,
-                                        size: 24,
-                                      ),
-                                    ),
-                                    const SizedBox(width: AppTheme.spaceMd),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            budget.clientName,
-                                            style: const TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                              color: AppTheme.textPrimary,
-                                            ),
-                                          ),
-                                          const SizedBox(
-                                            height: AppTheme.spaceXs,
-                                          ),
-                                          Text(
-                                            budget.items.isNotEmpty
-                                                ? budget.items.first.serviceName
-                                                : 'Sem itens',
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              color: AppTheme.textSecondary,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          'R\$ ${budget.total.toStringAsFixed(2)}',
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w600,
-                                            color: AppTheme.successGreen,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        );
-                      },
-                      loading: () => const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(AppTheme.spaceLg),
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
-                      error: (err, stack) => const PremiumCard(
-                        child: Center(
-                          child: Text('Erro ao carregar orçamentos'),
-                        ),
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+        childAspectRatio: 1.5,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        return TweenAnimationBuilder<double>(
+          duration: Duration(milliseconds: 400 + (index * 100)),
+          tween: Tween(begin: 0.0, end: 1.0),
+          curve: Curves.easeOutBack,
+          builder: (context, value, child) {
+            return Transform.translate(
+              offset: Offset(0, 20 * (1 - value)),
+              child: Opacity(opacity: value, child: child),
+            );
+          },
+          child: _QuickAccessCard(item: items[index]),
+        );
+      },
+    );
+  }
+
+  Widget _buildUsageIndicator(subscription, BuildContext context) {
+    if (subscription == null || subscription.tier.name != 'free') {
+      return const SizedBox.shrink();
+    }
+
+    final budgetCount = subscription.budgetCount;
+    final limit = 5;
+    final percentage = (budgetCount / limit).clamp(0.0, 1.0);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white.withOpacity(0.2),
+                  Colors.white.withOpacity(0.1),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1.5,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '$budgetCount/$limit orçamentos este mês',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
                     ),
+                    if (budgetCount >= limit - 2)
+                      TextButton(
+                        onPressed: () => context.push('/subscription'),
+                        style: TextButton.styleFrom(
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                        ),
+                        child: const Text(
+                          'Upgrade',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: percentage,
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      budgetCount >= limit - 1
+                          ? const Color(0xFFF59E0B)
+                          : Colors.white,
+                    ),
+                    minHeight: 8,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-                    const SizedBox(height: AppTheme.space2xl), // Bottom padding
+  Widget _buildRecentBudgetsSection(budgetsAsync, BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Orçamentos Recentes',
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            TextButton(
+              onPressed: () => context.go('/budgets'),
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.white.withOpacity(0.2),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+              ),
+              child: const Text(
+                'Ver todos',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        budgetsAsync.when(
+          data: (budgets) {
+            if (budgets.isEmpty) {
+              return _buildEmptyState();
+            }
+
+            final recentBudgets = budgets.take(3).toList();
+            return Column(
+              children: recentBudgets.asMap().entries.map((entry) {
+                final index = entry.key;
+                final budget = entry.value;
+                return TweenAnimationBuilder<double>(
+                  duration: Duration(
+                    milliseconds: (500 + (index * 100)).toInt(),
+                  ),
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, child) {
+                    return Transform.translate(
+                      offset: Offset(0, 30 * (1 - value)),
+                      child: Opacity(opacity: value, child: child),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildBudgetCard(budget, context),
+                  ),
+                );
+              }).toList(),
+            );
+          },
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+          ),
+          error: (_, __) => _buildEmptyState(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBudgetCard(budget, BuildContext context) {
+    return InkWell(
+      onTap: () => context.push('/budget/preview', extra: budget),
+      borderRadius: BorderRadius.circular(16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white.withOpacity(0.2),
+                  Colors.white.withOpacity(0.1),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1.5,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.description_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        budget.clientName,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        budget.items.isNotEmpty
+                            ? budget.items.first.serviceName
+                            : 'Sem itens',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  Formatters.formatCurrency(budget.total),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF10B981),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.all(48),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.white.withOpacity(0.2),
+                Colors.white.withOpacity(0.1),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(
+                Icons.description_outlined,
+                size: 64,
+                color: Colors.white.withOpacity(0.5),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Nenhum orçamento ainda',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Crie seu primeiro orçamento profissional',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white.withOpacity(0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickAccessCard extends StatefulWidget {
+  final _QuickAccessItem item;
+
+  const _QuickAccessCard({required this.item});
+
+  @override
+  State<_QuickAccessCard> createState() => _QuickAccessCardState();
+}
+
+class _QuickAccessCardState extends State<_QuickAccessCard> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered ? 1.05 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOutCubic,
+        child: InkWell(
+          onTap: widget.item.onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.white.withOpacity(0.2),
+                      Colors.white.withOpacity(0.1),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(_isHovered ? 0.4 : 0.2),
+                    width: 1.5,
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: widget.item.gradient,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        widget.item.icon,
+                        size: 28,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      widget.item.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Erro: $error')),
+          ),
+        ),
       ),
     );
   }
+}
+
+class _QuickAccessItem {
+  final String title;
+  final IconData icon;
+  final Gradient gradient;
+  final VoidCallback onTap;
+
+  _QuickAccessItem({
+    required this.title,
+    required this.icon,
+    required this.gradient,
+    required this.onTap,
+  });
 }

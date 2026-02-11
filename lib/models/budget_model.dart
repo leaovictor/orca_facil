@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
 
 class BudgetItem {
+  final String itemId; // ID único para cada item no orçamento
   final String serviceId;
   final String serviceName;
   final String serviceDescription;
@@ -12,6 +14,7 @@ class BudgetItem {
   final String? environment;
 
   BudgetItem({
+    String? itemId,
     required this.serviceId,
     required this.serviceName,
     required this.serviceDescription,
@@ -21,12 +24,13 @@ class BudgetItem {
     this.difficulty,
     this.distance,
     this.environment,
-  });
+  }) : itemId = itemId ?? const Uuid().v4();
 
   double get total => unitPrice * quantity;
 
   Map<String, dynamic> toMap() {
     return {
+      'itemId': itemId,
       'serviceId': serviceId,
       'serviceName': serviceName,
       'serviceDescription': serviceDescription,
@@ -41,6 +45,7 @@ class BudgetItem {
 
   factory BudgetItem.fromMap(Map<String, dynamic> map) {
     return BudgetItem(
+      itemId: map['itemId'], // Pode ser null para orçamentos antigos
       serviceId: map['serviceId'] ?? '',
       serviceName: map['serviceName'] ?? '',
       serviceDescription: map['serviceDescription'] ?? '',

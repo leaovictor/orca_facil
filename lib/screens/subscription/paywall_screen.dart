@@ -111,6 +111,7 @@ class PaywallScreen extends ConsumerWidget {
                     const SizedBox(height: AppTheme.spaceLg),
                     _buildFeature('✓', 'Até 5 orçamentos/mês', true),
                     _buildFeature('✓', 'PDF básico', true),
+                    _buildFeature('✓', 'Logo personalizado', false),
                     _buildFeature('✗', 'QR Code PIX', false),
                     _buildFeature('✗', 'Histórico completo', false),
                     _buildFeature('✗', 'Orçamentos ilimitados', false),
@@ -178,7 +179,7 @@ class PaywallScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           const Text(
-                            'R\$ 29,90',
+                            'R\$ 19,90',
                             style: TextStyle(
                               fontSize: 36,
                               fontWeight: FontWeight.bold,
@@ -213,24 +214,102 @@ class PaywallScreen extends ConsumerWidget {
                       ),
                       _buildFeature(
                         '✓',
-                        'QR Code PIX automático',
+                        'Logo personalizado',
                         true,
                         isLight: true,
                       ),
+                      _buildFeature('✓', 'QR Code PIX', true, isLight: true),
                       _buildFeature(
                         '✓',
                         'Histórico completo',
                         true,
                         isLight: true,
                       ),
-                      _buildFeature(
-                        '✓',
-                        'Suporte prioritário',
-                        true,
-                        isLight: true,
-                      ),
                     ],
                   ),
+                ),
+              ),
+
+              const SizedBox(height: AppTheme.spaceMd + 4), // 20px
+              // PREMIUM Plan Card (Exclusive Features)
+              PremiumCard(
+                padding: const EdgeInsets.all(AppTheme.spaceLg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.workspace_premium,
+                              color: AppTheme.warningColor,
+                              size: 24,
+                            ),
+                            const SizedBox(width: AppTheme.spaceSm),
+                            const Text(
+                              'PREMIUM',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.warningColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Para Empresas',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.warningColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppTheme.spaceSm),
+                    const Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          'R\$ 29,90',
+                          style: TextStyle(
+                            fontSize: 36,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        SizedBox(width: AppTheme.spaceSm),
+                        Padding(
+                          padding: EdgeInsets.only(bottom: 8),
+                          child: Text(
+                            '/mês',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppTheme.spaceLg),
+                    _buildFeature('✓', 'Tudo do PRO +', true),
+                    _buildFeature('✓', 'Dashboard analytics', true),
+                    _buildFeature('✓', 'Relatórios financeiros', true),
+                    _buildFeature('✓', 'Exportação Excel', true),
+                    _buildFeature('✓', 'Orçamentos recorrentes', true),
+                  ],
                 ),
               ),
 

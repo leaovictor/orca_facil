@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
@@ -58,52 +59,63 @@ class PdfService {
     }
 
     pdf.addPage(
-      pw.MultiPage(
+      pw.Page(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(32),
         build: (pw.Context context) {
-          return [
-            // 1. Header
-            _buildHeader(logoImage ?? appLogo, user, budget, boldFont),
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // 1. Header
+              _buildHeader(logoImage ?? appLogo, user, budget, boldFont),
 
-            // Status Banner if Paid
-            if (budget.status == BudgetStatus.paid) ...[
-              pw.SizedBox(height: 10),
-              _buildStatusBanner(
-                'ORÇAMENTO PAGO',
-                PdfColors.green900,
-                PdfColors.green100,
-              ),
-            ],
+              // Status Banner if Paid
+              if (budget.status == BudgetStatus.paid) ...[
+                pw.SizedBox(height: 10),
+                _buildStatusBanner(
+                  'ORÇAMENTO PAGO',
+                  PdfColors.green900,
+                  PdfColors.green100,
+                ),
+              ],
 
-            pw.SizedBox(height: 20),
+              pw.SizedBox(height: 20),
 
-            // 2. Client Info
-            _buildClientSection(budget),
-            pw.SizedBox(height: 24),
-
-            // 3. Services Table
-            _buildServicesTable(budget),
-            pw.SizedBox(height: 24),
-
-            // 4. Payment & QR (Optional)
-            if (budget.status != BudgetStatus.paid &&
-                user.pixKey != null &&
-                user.pixKey!.isNotEmpty) ...[
-              _buildPaymentSection(user, budget),
+              // 2. Client Info
+              _buildClientSection(budget),
               pw.SizedBox(height: 24),
+
+              // 3. Services Table
+              _buildServicesTable(budget),
+              pw.SizedBox(height: 24),
+
+              // 4. Payment & QR (Optional)
+              if (budget.status != BudgetStatus.paid &&
+                  user.pixKey != null &&
+                  user.pixKey!.isNotEmpty) ...[
+                _buildPaymentSection(user, budget),
+                pw.SizedBox(height: 24),
+              ],
+
+              // 5. Conditions & Terms
+              _buildTermsSection(budget),
+              pw.SizedBox(height: 40),
+
+              // 6. Signature
+              _buildSignatureBlock(),
+
+              // Watermark text for FREE tier
+              if (subscription.tier == SubscriptionTier.free) ...[
+                pw.SizedBox(height: 20),
+                pw.Center(
+                  child: pw.Text(
+                    'Versão Gratuita - Orça+',
+                    style: pw.TextStyle(fontSize: 10, color: PdfColors.grey400),
+                  ),
+                ),
+              ],
             ],
-
-            // 5. Conditions & Terms
-            _buildTermsSection(budget),
-            pw.SizedBox(height: 40),
-
-            // 6. Signature
-            _buildSignatureBlock(),
-
-            // Watermark for FREE tier
-            if (subscription.tier == SubscriptionTier.free) _buildWatermark(),
-          ];
+          );
         },
       ),
     );
@@ -518,51 +530,23 @@ class PdfService {
     );
   }
 
-  pw.Widget _buildWatermark() {
-    return pw.FullPage(
-      ignoreMargins: true,
-      child: pw.Center(
-        child: pw.Transform.rotate(
-          angle: -0.5, // ~-30 degrees diagonal
-          child: pw.Opacity(
-            opacity: 0.15,
-            child: pw.Column(
-              mainAxisSize: pw.MainAxisSize.min,
-              children: [
-                pw.Text(
-                  'VERSÃO GRATUITA',
-                  style: pw.TextStyle(
-                    fontSize: 70,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.grey600,
-                  ),
-                ),
-                pw.SizedBox(height: 10),
-                pw.Text(
-                  'Orça+',
-                  style: pw.TextStyle(
-                    fontSize: 30,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.blue700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   // Share PDF
   Future<void> sharePdf(Uint8List pdfBytes, String fileName) async {
     try {
-      await Printing.sharePdf(
-        bytes: pdfBytes,
-        filename: '$fileName.pdf',
-        body: 'Segue proposta de serviços elétricos em anexo.',
-        subject: 'Proposta $fileName',
-      );
+      if (kIsWeb) {
+        // Na web, abrir em nova aba para visualizar e permitir download
+        await Printing.layoutPdf(
+          onLayout: (PdfPageFormat format) async => pdfBytes,
+        );
+      } else {
+        // Em mobile/desktop, usar compartilhamento nativo
+        await Printing.sharePdf(
+          bytes: pdfBytes,
+          filename: '$fileName.pdf',
+          body: 'Segue proposta de serviços elétricos em anexo.',
+          subject: 'Proposta $fileName',
+        );
+      }
     } catch (e) {
       throw Exception('Erro ao compartilhar PDF: $e');
     }

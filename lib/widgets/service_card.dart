@@ -210,10 +210,14 @@ class _ServiceCardState extends State<ServiceCard> {
                       value: _environment,
                       items: [
                         'Sala',
+                        'Quarto',
                         'Cozinha',
                         'Banheiro',
-                        'Externo',
+                        'Lavanderia',
+                        'Garagem',
+                        'Área Externa',
                         'Forro',
+                        'Corredor',
                       ],
                       onChanged: (val) {
                         if (val != null) {

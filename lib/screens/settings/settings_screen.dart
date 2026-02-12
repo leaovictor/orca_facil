@@ -150,9 +150,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Assinatura',
-                        style: Theme.of(context).textTheme.titleLarge,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Assinatura',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          TextButton.icon(
+                            onPressed: () =>
+                                context.push('/settings/plan-details'),
+                            icon: const Icon(Icons.info_outline, size: 18),
+                            label: const Text('Detalhes'),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       ref
@@ -162,32 +173,107 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               if (subscription == null) {
                                 return const Text('Carregando...');
                               }
-                              return ListTile(
-                                leading: Icon(
-                                  subscription.tier.name == 'pro'
-                                      ? Icons.star
-                                      : Icons.star_border,
-                                  color: subscription.tier.name == 'pro'
-                                      ? AppTheme.primaryBlue
-                                      : Colors.grey,
-                                ),
-                                title: Text(
-                                  subscription.tier.name == 'pro'
-                                      ? 'Plano Pro'
-                                      : 'Plano Gratuito',
-                                ),
-                                subtitle: Text(
-                                  subscription.tier.name == 'pro'
-                                      ? 'Orçamentos ilimitados'
-                                      : 'Até 5 orçamentos/mês (${subscription.budgetCount}/5)',
-                                ),
-                                trailing: subscription.tier.name == 'free'
-                                    ? ElevatedButton(
-                                        onPressed: () =>
-                                            context.push('/subscription'),
-                                        child: const Text('Upgrade'),
-                                      )
-                                    : null,
+
+                              IconData getIcon() {
+                                switch (subscription.tier.name) {
+                                  case 'premium':
+                                    return Icons.diamond;
+                                  case 'pro':
+                                    return Icons.star;
+                                  default:
+                                    return Icons.star_border;
+                                }
+                              }
+
+                              Color getColor() {
+                                switch (subscription.tier.name) {
+                                  case 'premium':
+                                    return Colors.purple;
+                                  case 'pro':
+                                    return AppTheme.primaryBlue;
+                                  default:
+                                    return Colors.grey;
+                                }
+                              }
+
+                              String getSubtitle() {
+                                switch (subscription.tier.name) {
+                                  case 'premium':
+                                    return 'Recursos avançados + Dashboard';
+                                  case 'pro':
+                                    return 'Orçamentos ilimitados';
+                                  default:
+                                    return 'Até 5 orçamentos/mês (${subscription.budgetCount}/5)';
+                                }
+                              }
+
+                              return Column(
+                                children: [
+                                  ListTile(
+                                    leading: Icon(getIcon(), color: getColor()),
+                                    title: Text(
+                                      'Plano ${subscription.tierDisplayName}',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: getColor(),
+                                      ),
+                                    ),
+                                    subtitle: Text(getSubtitle()),
+                                    trailing: subscription.tier.name == 'free'
+                                        ? ElevatedButton(
+                                            onPressed: () =>
+                                                context.push('/subscription'),
+                                            child: const Text('Upgrade'),
+                                          )
+                                        : Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 6,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: subscription.isActive
+                                                  ? Colors.green.withOpacity(
+                                                      0.1,
+                                                    )
+                                                  : Colors.red.withOpacity(0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color: subscription.isActive
+                                                    ? Colors.green
+                                                    : Colors.red,
+                                              ),
+                                            ),
+                                            child: Text(
+                                              subscription.isActive
+                                                  ? 'Ativo'
+                                                  : 'Inativo',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                color: subscription.isActive
+                                                    ? Colors.green
+                                                    : Colors.red,
+                                              ),
+                                            ),
+                                          ),
+                                  ),
+                                  if (subscription.tier.name != 'free')
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: SizedBox(
+                                        width: double.infinity,
+                                        child: OutlinedButton.icon(
+                                          onPressed: () =>
+                                              context.push('/subscription'),
+                                          icon: const Icon(Icons.settings),
+                                          label: const Text(
+                                            'Gerenciar Assinatura',
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               );
                             },
                             loading: () => const CircularProgressIndicator(),

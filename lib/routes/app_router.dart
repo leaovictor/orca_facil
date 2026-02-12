@@ -16,6 +16,7 @@ import '../screens/services/services_screen.dart';
 import '../screens/services/service_form_screen.dart';
 import '../screens/settings/edit_profile_screen.dart';
 import '../screens/settings/subscription_screen.dart';
+import '../screens/settings/plan_details_screen.dart';
 import '../screens/budget/budgets_screen.dart';
 import '../screens/budget/pdf_preview_screen.dart';
 import '../models/budget_model.dart';
@@ -143,6 +144,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/subscription',
         builder: (context, state) => const SubscriptionScreen(),
+      ),
+      GoRoute(
+        path: '/settings/plan-details',
+        builder: (context, state) => const PlanDetailsScreen(),
       ),
       GoRoute(
         path: '/budget/preview',

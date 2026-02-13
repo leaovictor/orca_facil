@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:async';
+import 'package:lottie/lottie.dart';
 import '../viewmodels/auth_viewmodel.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -12,39 +12,22 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
+    with TickerProviderStateMixin {
+  late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(vsync: this);
+  }
 
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
-
-    _scaleAnimation = Tween<double>(
-      begin: 0.5,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
-
-    _controller.forward();
-
-    Timer(const Duration(seconds: 2), () {
-      _checkAuthAndNavigate();
-    });
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   void _checkAuthAndNavigate() {
-    // Check if widget is still mounted before accessing ref
     if (!mounted) return;
 
     final authState = ref.read(authStateProvider);
@@ -62,61 +45,25 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       loading: () {
         if (mounted) context.go('/login');
       },
-      error: (_, __) {
+      error: (error, stack) {
         if (mounted) context.go('/login');
       },
     );
   }
 
   @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0D47A1), Color(0xFF002171)],
-          ),
-        ),
-        child: Center(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: ScaleTransition(
-              scale: _scaleAnimation,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset(
-                    'assets/logo/logo_premium.png',
-                    width: 150,
-                    height: 150,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Orça+',
-                    style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Orçamentos Profissionais',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleMedium?.copyWith(color: Colors.white70),
-                  ),
-                ],
-              ),
-            ),
-          ),
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Lottie.asset(
+          'assets/logo/splash_screen.json',
+          controller: _controller,
+          onLoaded: (composition) {
+            _controller
+              ..duration = composition.duration
+              ..forward().then((value) => _checkAuthAndNavigate());
+          },
         ),
       ),
     );

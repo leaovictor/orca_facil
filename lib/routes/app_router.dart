@@ -59,15 +59,31 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/splash',
         builder: (context, state) => const SplashScreen(),
       ),
-      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/login',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const LoginScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return child;
+          },
+        ),
+      ),
       GoRoute(
         path: '/register',
         builder: (context, state) => const RegisterScreen(),
       ),
       // Shell Route for adaptive navigation
       ShellRoute(
-        builder: (context, state, child) {
-          return ScaffoldWithNavigation(child: child);
+        pageBuilder: (context, state, child) {
+          return CustomTransitionPage(
+            key: state.pageKey,
+            child: ScaffoldWithNavigation(child: child),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return child;
+                },
+          );
         },
         routes: [
           GoRoute(

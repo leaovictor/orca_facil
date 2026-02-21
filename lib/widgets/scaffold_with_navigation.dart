@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../viewmodels/auth_viewmodel.dart';
+import '../viewmodels/subscription_viewmodel.dart';
+import '../models/subscription_model.dart';
+import 'layouts/pro_scaffold.dart';
+import 'layouts/premium_scaffold.dart';
 
 class ScaffoldWithNavigation extends ConsumerWidget {
   final Widget child;
@@ -9,7 +14,32 @@ class ScaffoldWithNavigation extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Determine if we should show the NavigationRail (Desktop/Tablet)
+    final user = ref.watch(authStateProvider).value;
+    final subscriptionAsync = user != null
+        ? ref.watch(subscriptionProvider(user.uid))
+        : const AsyncValue<SubscriptionModel?>.data(null);
+
+    final subscription = subscriptionAsync.value;
+    final tier = subscription?.tier ?? SubscriptionTier.free;
+
+    final selectedIndex = _calculateSelectedIndex(context);
+
+    // Dynamic Navigation Switching
+    if (tier == SubscriptionTier.premium) {
+      return PremiumScaffold(
+        selectedIndex: selectedIndex,
+        onDestinationSelected: (index) => _onItemTapped(index, context),
+        child: child,
+      );
+    } else if (tier == SubscriptionTier.pro) {
+      return ProScaffold(
+        selectedIndex: selectedIndex,
+        onDestinationSelected: (index) => _onItemTapped(index, context),
+        child: child,
+      );
+    }
+
+    // Default / Free Tier Layout
     // Breakpoint: 600px
     final isDesktop = MediaQuery.of(context).size.width >= 600;
 
@@ -47,7 +77,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                   label: Text('Configurações'),
                 ),
               ],
-              selectedIndex: _calculateSelectedIndex(context),
+              selectedIndex: selectedIndex,
               onDestinationSelected: (index) => _onItemTapped(index, context),
             ),
           if (isDesktop) const VerticalDivider(thickness: 1, width: 1),
@@ -84,7 +114,7 @@ class ScaffoldWithNavigation extends ConsumerWidget {
                   label: 'Config',
                 ),
               ],
-              selectedIndex: _calculateSelectedIndex(context),
+              selectedIndex: selectedIndex,
               onDestinationSelected: (index) => _onItemTapped(index, context),
             ),
     );

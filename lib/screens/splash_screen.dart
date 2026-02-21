@@ -18,7 +18,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this);
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3), // Increased duration for animation
+    );
+    // Determine the next route based on auth state but wait for animation
+    _controller.forward().then((_) => _checkAuthAndNavigate());
   }
 
   @override
@@ -54,16 +59,20 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
-        child: Lottie.asset(
-          'assets/logo/splash_screen.json',
-          controller: _controller,
-          onLoaded: (composition) {
-            _controller
-              ..duration = composition.duration
-              ..forward().then((value) => _checkAuthAndNavigate());
-          },
+        child: SizedBox(
+          width: 250,
+          height: 250,
+          child: Lottie.asset(
+            'assets/logo/splash_screen.json',
+            controller: _controller,
+            fit: BoxFit.contain,
+            onLoaded: (composition) {
+              _controller.duration = composition.duration;
+              _controller.forward();
+            },
+          ),
         ),
       ),
     );

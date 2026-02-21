@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../widgets/custom_button.dart';
@@ -6,6 +7,7 @@ import '../../widgets/custom_text_field.dart';
 import '../../widgets/loading_overlay.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/theme/app_theme.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -77,7 +79,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const SizedBox(height: 48),
-                  Image.asset('assets/logo/logo.png', width: 100, height: 100),
+                  const SizedBox(height: 48),
+                  Center(
+                    child: RichText(
+                      text: TextSpan(
+                        style: GoogleFonts.inter(
+                          fontSize: 40,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(
+                            context,
+                          ).textTheme.displayLarge?.color,
+                        ),
+                        children: [
+                          const TextSpan(text: 'Orça'),
+                          TextSpan(
+                            text: '+',
+                            style: TextStyle(
+                              color: AppTheme.successGreen,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const TextSpan(text: ' Pay'),
+                        ],
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   Text(
                     'Bem-vindo!',

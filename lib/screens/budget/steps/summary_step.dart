@@ -83,13 +83,41 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
       }
     } catch (e) {
       setState(() => _isCreating = false);
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao criar orçamento: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        final errorMessage = e.toString().toLowerCase();
+        if (errorMessage.contains('limite') ||
+            errorMessage.contains('upgrade')) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Limite Atingido 🚀'),
+              content: const Text(
+                'Você atingiu o limite de 5 orçamentos gratuitos deste mês.\n\nFaça um upgrade para o plano Pro e crie orçamentos ILIMITADOS!',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Depois'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    context.push('/subscription');
+                  },
+                  child: const Text('Ver Planos'),
+                ),
+              ],
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erro ao criar orçamento: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }

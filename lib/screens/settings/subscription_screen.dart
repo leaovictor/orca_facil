@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/subscription_model.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/subscription_viewmodel.dart';
-import '../../widgets/custom_button.dart';
 
 class SubscriptionScreen extends ConsumerStatefulWidget {
   const SubscriptionScreen({super.key});
@@ -38,6 +38,7 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
 
     try {
       final functions = FirebaseFunctions.instance;
+      // Note: Ideally this should be a region-specific call if needed
       final callable = functions.httpsCallable('createStripePortalSession');
       final result = await callable.call();
 
@@ -74,285 +75,359 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
     final hasActiveSubscription = subscriptionAsync.value?.isActive ?? false;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Planos e Assinatura')),
+      backgroundColor: Colors.grey[50], // Professional background
+      appBar: AppBar(
+        title: Text(
+          'PLANOS & ASSINATURA',
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            letterSpacing: 1.0,
+            color: Colors.black87,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black87),
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: Column(
           children: [
-            const Text(
-              'Escolha o plano ideal para você',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            Text(
+              'Escolha a Potência do seu Negócio',
+              style: GoogleFonts.inter(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Desbloqueie todo o potencial do Orça+',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+            Text(
+              'Do básico ao avançado, temos o plano perfeito para você crescer.',
+              style: GoogleFonts.inter(fontSize: 16, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
 
-            // Manage subscription button (if has active subscription)
             if (hasActiveSubscription &&
                 currentTier != SubscriptionTier.free) ...[
-              const SizedBox(height: 24),
-              Card(
-                color: Colors.blue.shade50,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(Icons.info_outline, color: Colors.blue),
-                          SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Você tem uma assinatura ativa',
-                              style: TextStyle(fontWeight: FontWeight.w500),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      CustomButton(
-                        text: _isLoadingPortal
-                            ? 'Carregando...'
-                            : 'Gerenciar Assinatura',
-                        onPressed: _isLoadingPortal
-                            ? () {}
-                            : _openCustomerPortal,
-                        backgroundColor: Colors.blue,
-                        textColor: Colors.white,
-                        icon: _isLoadingPortal
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(
-                                Icons.manage_accounts,
-                                color: Colors.white,
-                              ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Atualize, cancele ou gerencie seu pagamento',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              const SizedBox(height: 32),
+              _buildActiveSubscriptionCard(currentTier),
             ],
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
 
-            // Free Plan
+            // Plan Cards
             _buildPlanCard(
               context,
+              tier: SubscriptionTier.free,
               title: 'Gratuito',
               price: 'R\$ 0,00',
-              features: const [
-                'Até 5 orçamentos por mês',
-                'Orçamentos básicos',
-                'Marca d\'água nos PDFs',
-                'Suporte por email',
+              description: 'Para quem está começando',
+              features: [
+                'Até 5 orçamentos/mês',
+                'Orçamentos PDF básicos',
+                'Marca d\'água Orça+',
+                'Cadastro simples de clientes',
               ],
               isCurrent: currentTier == SubscriptionTier.free,
               onPressed: () {},
-              tier: SubscriptionTier.free,
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
-            // Pro Plan
             _buildPlanCard(
               context,
+              tier: SubscriptionTier.pro,
               title: 'Pro',
-              price: 'R\$ 19,90 / mês',
-              features: const [
-                '✨ Orçamentos ILIMITADOS',
-                '✨ Sem marca d\'água',
-                '✨ Integração WhatsApp',
-                '✨ Suporte prioritário',
+              price: 'R\$ 19,90',
+              period: '/mês',
+              description: 'Para profissionais autônomos',
+              features: [
+                'Orçamentos ILIMITADOS',
+                'Sem marca d\'água',
+                'Integração WhatsApp',
+                'Modelos de orçamento',
+                'Suporte prioritário',
               ],
               isCurrent: currentTier == SubscriptionTier.pro,
+              isRecommended: true,
               onPressed: currentTier == SubscriptionTier.pro
                   ? () {}
                   : () => _launchStripeCheckout(
                       user!.uid,
                       AppConstants.stripeProMonthlyUrl,
                     ),
-              tier: SubscriptionTier.pro,
-              isRecommended: true,
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
-            // Premium Plan
             _buildPlanCard(
               context,
+              tier: SubscriptionTier.premium,
               title: 'Premium',
-              price: 'R\$ 39,90 / mês',
-              features: const [
-                '⭐ Tudo do Pro +',
-                '⭐ Dashboard Financeiro',
-                '⭐ Relatórios Avançados (4 tipos)',
-                '⭐ Exportação para Excel',
-                '⭐ Análises e métricas',
+              price: 'R\$ 39,90',
+              period: '/mês',
+              description: 'Para pequenas empresas',
+              features: [
+                'Tudo do Pro +',
+                'Dashboard Financeiro',
+                'Análise de Lucro e Margem',
+                'Relatórios Avançados (PDF/Excel)',
+                'CRM de Clientes',
+                'Múltiplos usuários (em breve)',
               ],
               isCurrent: currentTier == SubscriptionTier.premium,
+              isPremium: true,
               onPressed: currentTier == SubscriptionTier.premium
                   ? () {}
                   : () => _launchStripeCheckout(
                       user!.uid,
                       AppConstants.stripePremiumMonthlyUrl,
                     ),
-              tier: SubscriptionTier.premium,
             ),
 
-            const SizedBox(height: 32),
-            const Text(
-              'Dúvidas sobre o pagamento?',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Pagamento 100% seguro processado pelo Stripe. Cancele a qualquer momento sem taxas.',
+            const SizedBox(height: 40),
+
+            Text(
+              'Pagamento seguro via Stripe. Cancele quando quiser.',
+              style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[400]),
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey, fontSize: 12),
             ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
     );
   }
 
+  Widget _buildActiveSubscriptionCard(SubscriptionTier tier) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.blue.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.check_circle, color: Colors.blue[600]),
+              const SizedBox(width: 8),
+              Text(
+                'Seu plano ${tier == SubscriptionTier.premium ? "Premium" : "Pro"} está ativo',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: _isLoadingPortal ? null : _openCustomerPortal,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                side: BorderSide(color: Colors.blue[600]!),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: _isLoadingPortal
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(
+                      'Gerenciar Assinatura',
+                      style: GoogleFonts.inter(
+                        color: Colors.blue[600],
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPlanCard(
     BuildContext context, {
+    required SubscriptionTier tier,
     required String title,
     required String price,
+    String period = '',
+    required String description,
     required List<String> features,
     required bool isCurrent,
     required VoidCallback onPressed,
-    required SubscriptionTier tier,
     bool isRecommended = false,
+    bool isPremium = false,
   }) {
-    final theme = Theme.of(context);
-    final isPro = tier == SubscriptionTier.pro;
-    final isPremium = tier == SubscriptionTier.premium;
+    final borderColor = isPremium
+        ? Colors.purple.withOpacity(0.5)
+        : isRecommended
+        ? AppTheme.primaryBlue
+        : Colors.grey[200]!;
 
-    Color getBorderColor() {
-      if (isPremium) return Colors.purple;
-      if (isPro) return AppTheme.primaryBlue;
-      return Colors.grey.shade300;
-    }
+    final headerColor = isPremium
+        ? const Color(0xFF0F172A) // Dark Slate
+        : Colors.white;
 
-    Color getButtonColor() {
-      if (isPremium) return Colors.purple;
-      if (isPro) return AppTheme.primaryBlue;
-      return Colors.grey;
-    }
+    final textColor = isPremium ? Colors.white : Colors.black87;
+    final subTextColor = isPremium ? Colors.white70 : Colors.grey[600];
 
     return Stack(
       children: [
-        Card(
-          elevation: isRecommended ? 8 : 2,
-          shape: RoundedRectangleBorder(
+        Container(
+          decoration: BoxDecoration(
+            color: headerColor,
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: getBorderColor(),
+            border: Border.all(
+              color: borderColor,
               width: isRecommended || isPremium ? 2 : 1,
             ),
+            boxShadow: [
+              if (isRecommended || isPremium)
+                BoxShadow(
+                  color: isPremium
+                      ? Colors.purple.withOpacity(0.2)
+                      : Colors.blue.withOpacity(0.1),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+            ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (isRecommended || isPremium) const SizedBox(height: 12),
-                Text(
-                  title,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: isPremium
-                        ? Colors.purple
-                        : isRecommended
-                        ? AppTheme.primaryBlue
-                        : null,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  price,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                ...features.map(
-                  (feature) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.check_circle,
-                          color: isPremium
-                              ? Colors.purple
-                              : isRecommended
-                              ? AppTheme.primaryBlue
-                              : Colors.grey,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(child: Text(feature)),
-                      ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (isRecommended || isPremium)
+                const SizedBox(height: 20), // Space for badge
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Text(
+                      title.toUpperCase(),
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.5,
+                        color: isPremium
+                            ? Colors.purpleAccent
+                            : (isRecommended
+                                  ? AppTheme.primaryBlue
+                                  : Colors.grey[600]),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                if (isCurrent)
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: getButtonColor().withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
+                    const SizedBox(height: 16),
+                    Row(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
                       children: [
-                        Icon(Icons.check, color: getButtonColor()),
-                        const SizedBox(width: 8),
                         Text(
-                          'Plano Atual',
-                          style: TextStyle(
-                            color: getButtonColor(),
+                          price,
+                          style: GoogleFonts.inter(
+                            fontSize: 36,
                             fontWeight: FontWeight.bold,
+                            color: textColor,
                           ),
                         ),
+                        if (period.isNotEmpty)
+                          Text(
+                            period,
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              color: subTextColor,
+                            ),
+                          ),
                       ],
                     ),
-                  )
-                else
-                  CustomButton(
-                    text: tier == SubscriptionTier.free
-                        ? 'Plano Gratuito'
-                        : 'Assinar Agora',
-                    onPressed: tier == SubscriptionTier.free
-                        ? () {}
-                        : onPressed,
-                    backgroundColor: getButtonColor(),
-                    textColor: Colors.white,
-                  ),
-              ],
-            ),
+                    const SizedBox(height: 8),
+                    Text(
+                      description,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: subTextColor,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    const Divider(),
+                    const SizedBox(height: 24),
+                    ...features.map(
+                      (feature) =>
+                          _buildFeatureItem(feature, isPremium: isPremium),
+                    ),
+                    const SizedBox(height: 32),
+
+                    if (isCurrent)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          color: (isPremium ? Colors.white : Colors.green)
+                              .withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'PLANO ATUAL',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.bold,
+                              color: isPremium ? Colors.white : Colors.green,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      ElevatedButton(
+                        onPressed: onPressed,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isPremium
+                              ? Colors.purpleAccent
+                              : (isRecommended
+                                    ? AppTheme.primaryBlue
+                                    : Colors.grey[800]),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          tier == SubscriptionTier.free
+                              ? 'COMEÇAR GRÁTIS'
+                              : 'ASSINAR AGORA',
+                          style: GoogleFonts.inter(
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
         if (isRecommended)
@@ -362,17 +437,25 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             right: 0,
             child: Center(
               child: Container(
+                transform: Matrix4.translationValues(0, -12, 0),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 4,
+                  vertical: 6,
                 ),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryBlue,
                   borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryBlue.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: const Text(
+                child: Text(
                   'MAIS POPULAR',
-                  style: TextStyle(
+                  style: GoogleFonts.inter(
                     color: Colors.white,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -381,24 +464,34 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
               ),
             ),
           ),
-        if (isPremium && !isRecommended)
+        if (isPremium)
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             child: Center(
               child: Container(
+                transform: Matrix4.translationValues(0, -12, 0),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 4,
+                  vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.purple,
+                  gradient: const LinearGradient(
+                    colors: [Colors.purple, Colors.blue],
+                  ),
                   borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.purple.withOpacity(0.4),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: const Text(
-                  'RECURSOS AVANÇADOS',
-                  style: TextStyle(
+                child: Text(
+                  'RECOMENDADO PARA EMPRESAS',
+                  style: GoogleFonts.inter(
                     color: Colors.white,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -408,6 +501,31 @@ class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildFeatureItem(String text, {required bool isPremium}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Icon(
+            Icons.check,
+            color: isPremium ? Colors.purpleAccent : Colors.green,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: isPremium ? Colors.white70 : Colors.grey[700],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -4,7 +4,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_types.dart';
 import 'viewmodels/theme_viewmodel.dart';
+import 'viewmodels/auth_viewmodel.dart'; // Import Auth
+import 'viewmodels/subscription_viewmodel.dart'; // Import Subscription
+import 'models/subscription_model.dart'; // Import Model
 import 'routes/app_router.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'services/notification_service.dart';
@@ -51,13 +55,38 @@ class OrcaMaisApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeProvider);
+
+    // Watch Subscription to determine Theme
+    final user = ref.watch(authStateProvider).value;
+    final subscriptionAsync = user != null
+        ? ref.watch(subscriptionProvider(user.uid))
+        : const AsyncValue<SubscriptionModel?>.data(null);
+    final tier = subscriptionAsync.value?.tier ?? SubscriptionTier.free;
+
+    // Map Tier to ThemeType
+    AppThemeType themeType;
+    switch (tier) {
+      case SubscriptionTier.premium:
+        themeType = AppThemeType.premium;
+        break;
+      case SubscriptionTier.pro:
+        themeType = AppThemeType.pro;
+        break;
+      case SubscriptionTier.free:
+        themeType = AppThemeType.free;
+    }
 
     return MaterialApp.router(
       title: 'Orça+',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ref.watch(themeProvider),
+      // Provide Dynamic Themes
+      theme: AppTheme.getTheme(type: themeType, brightness: Brightness.light),
+      darkTheme: AppTheme.getTheme(
+        type: themeType,
+        brightness: Brightness.dark,
+      ),
+      themeMode: themeMode,
       routerConfig: router,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

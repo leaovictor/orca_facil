@@ -1,10 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../screens/splash_screen.dart';
+
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/home/dashboard_screen.dart' as home;
-import '../modules/dashboard/screens/dashboard_screen.dart' as financial;
 import '../modules/reports/screens/reports_screen.dart';
 import '../modules/reports/screens/monthly_revenue_screen.dart';
 import '../modules/reports/screens/top_services_screen.dart';
@@ -31,16 +30,12 @@ final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
 
   return GoRouter(
-    initialLocation: '/splash',
+    initialLocation: '/dashboard',
     redirect: (context, state) {
       final isLoggedIn = authState.value != null;
       final isLoggingIn =
           state.matchedLocation == '/login' ||
           state.matchedLocation == '/register';
-      final isSplash = state.matchedLocation == '/splash';
-
-      // Allow splash screen
-      if (isSplash) return null;
 
       // If not logged in and not on login/register, redirect to login
       if (!isLoggedIn && !isLoggingIn) {
@@ -55,10 +50,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/splash',
-        builder: (context, state) => const SplashScreen(),
-      ),
       GoRoute(
         path: '/login',
         pageBuilder: (context, state) => CustomTransitionPage(
@@ -127,11 +118,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           final serviceId = state.pathParameters['id']!;
           return ServiceFormScreen(serviceId: serviceId);
         },
-      ),
-      // Financial Dashboard (Premium only)
-      GoRoute(
-        path: '/dashboard/financial',
-        builder: (context, state) => const financial.DashboardScreen(),
       ),
       // Reports (Premium only)
       GoRoute(

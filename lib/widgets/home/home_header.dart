@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/user_model.dart';
 import '../../models/subscription_model.dart';
@@ -43,6 +44,35 @@ class HomeHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Branding (AppBar replacement)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                RichText(
+                  text: TextSpan(
+                    style: GoogleFonts.inter(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    children: [
+                      const TextSpan(text: 'Orça'),
+                      TextSpan(
+                        text: '+',
+                        style: TextStyle(
+                          color: AppTheme.successGreen,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const TextSpan(text: ' Pay'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           Row(
             children: [
               // Avatar / Initials

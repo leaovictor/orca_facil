@@ -100,7 +100,7 @@ class _PremiumDashboardScreenState extends ConsumerState<PremiumDashboardScreen>
                         data: (subscription) =>
                             _buildUsageIndicator(subscription, context),
                         loading: () => const SizedBox.shrink(),
-                        error: (_, __) => const SizedBox.shrink(),
+                        error: (_, _) => const SizedBox.shrink(),
                       ),
 
                       // Recent Budgets
@@ -190,7 +190,7 @@ class _PremiumDashboardScreenState extends ConsumerState<PremiumDashboardScreen>
                 data: (subscription) =>
                     PlanBadge(isPro: subscription?.tier.name == 'pro'),
                 loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
               ),
             ],
           ),
@@ -522,7 +522,7 @@ class _PremiumDashboardScreenState extends ConsumerState<PremiumDashboardScreen>
               child: CircularProgressIndicator(color: Colors.white),
             ),
           ),
-          error: (_, __) => _buildEmptyState(),
+          error: (_, _) => _buildEmptyState(),
         ),
       ],
     );
